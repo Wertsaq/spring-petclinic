@@ -8,17 +8,10 @@ pipeline {
     }
 
     stages {
-
         stage('Clone repository') {
             steps {
+                echo 'Cloning the repository...'
                 git url: 'https://github.com/Wertsaq/spring-petclinic.git', branch: 'main'
-            }
-        }
-
-
-        stage('Checkout') {
-            steps {
-                checkout scm
             }
         }
 
@@ -30,9 +23,8 @@ pipeline {
                 }
             }
             steps {
-                script {
-                    sh 'mvn clean package '
-                }
+                echo 'Running Maven clean and package...'
+                sh 'mvn clean package'
             }
         }
 
@@ -40,22 +32,40 @@ pipeline {
             agent {
                 docker {
                     image 'maven:3.9.8-eclipse-temurin-22-alpine'
+                    reuseNode true  
                     args '-v /var/tmp/maven:/var/maven/.m2 -e MAVEN_CONFIG=/var/maven/.m2'
                 }
             }
             steps {
+                echo 'Archiving build artifacts...'
                 archiveArtifacts artifacts: "target/*.jar", fingerprint: true
             }
         }
 
-        stage('SonarQube analysis') {
+        stage('Test') {
             agent {
                 docker {
                     image 'maven:3.9.8-eclipse-temurin-22-alpine'
+                    reuseNode true  
                     args '-v /var/tmp/maven:/var/maven/.m2 -e MAVEN_CONFIG=/var/maven/.m2'
                 }
             }
             steps {
+                echo 'Running Maven tests...'
+                sh 'mvn test'
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            agent {
+                docker {
+                    image 'maven:3.9.8-eclipse-temurin-22-alpine'
+                    reuseNode true  
+                    args '-v /var/tmp/maven:/var/maven/.m2 -e MAVEN_CONFIG=/var/maven/.m2'
+                }
+            }
+            steps {
+                echo 'Running SonarQube analysis...'
                 withSonarQubeEnv('SonarQube') {
                     withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
                         sh 'mvn sonar:sonar -Dsonar.login=$SONAR_TOKEN'
@@ -64,23 +74,10 @@ pipeline {
             }
         }
 
-        stage('Test') {
-            agent {
-                docker {
-                    image 'maven:3.9.8-eclipse-temurin-22-alpine'
-                    args '-v /var/tmp/maven:/var/maven/.m2 -e MAVEN_CONFIG=/var/maven/.m2'
-                }
-            }
-            steps {
-                script {
-                    sh 'mvn test'
-                }
-            }
-        }
-
         stage('Build Docker Image') {
             agent any
             steps {
+                echo 'Building Docker image...'
                 script {
                     sh "docker build -t ${IMAGE_NAME}:latest ."
                 }
@@ -89,6 +86,7 @@ pipeline {
 
         stage('Tag Docker Image') {
             steps {
+                echo 'Tagging Docker image...'
                 script {
                     sh "docker tag ${IMAGE_NAME}:latest ${IMAGE_NAME}:${env.BUILD_NUMBER}"
                 }
@@ -97,14 +95,28 @@ pipeline {
 
         stage('Push Docker Image to Docker Hub') {
             steps {
+                echo 'Pushing Docker image to Docker Hub...'
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_PASS')]) {
                     script {
                         sh 'echo $DOCKERHUB_PASS | docker login -u $DOCKERHUB_USER --password-stdin'
-                        sh "docker push ${IMAGE_NAME}:latest"
                         sh "docker push ${IMAGE_NAME}:${env.BUILD_NUMBER}"
+                        sh "docker push ${IMAGE_NAME}:latest"
                     }
                 }
             }
+        }
+    }
+
+    post {
+        always {
+            echo 'Cleaning up...'
+            cleanWs()
+        }
+        success {
+            echo 'Pipeline succeeded!'
+        }
+        failure {
+            echo 'Pipeline failed.'
         }
     }
 }
