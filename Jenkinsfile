@@ -8,10 +8,17 @@ pipeline {
     }
 
     stages {
+
         stage('Clone repository') {
             steps {
-                echo 'Cloning the repository...'
                 git url: 'https://github.com/Wertsaq/spring-petclinic.git', branch: 'main'
+            }
+        }
+
+
+        stage('Checkout') {
+            steps {
+                checkout scm
             }
         }
 
@@ -23,8 +30,9 @@ pipeline {
                 }
             }
             steps {
-                echo 'Running Maven clean and package...'
-                sh 'mvn clean package'
+                script {
+                    sh 'mvn clean package '
+                }
             }
         }
 
@@ -36,10 +44,23 @@ pipeline {
                 }
             }
             steps {
-                sh 'pwd'
-                sh 'ls -la'
-                echo 'Archiving build artifacts...'
                 archiveArtifacts artifacts: "target/*.jar", fingerprint: true
+            }
+        }
+
+        stage('SonarQube analysis') {
+            agent {
+                docker {
+                    image 'maven:3.9.8-eclipse-temurin-22-alpine'
+                    args '-v /var/tmp/maven:/var/maven/.m2 -e MAVEN_CONFIG=/var/maven/.m2'
+                }
+            }
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                    withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                        sh 'mvn sonar:sonar -Dsonar.login=$SONAR_TOKEN'
+                    }
+                }
             }
         }
 
@@ -51,49 +72,38 @@ pipeline {
                 }
             }
             steps {
-                echo 'Running Maven tests...'
-                sh 'mvn test'
-            }
-        }
-
-        stage('SonarQube Analysis') {
-            agent {
-                docker {
-                    image 'maven:3.9.8-eclipse-temurin-22-alpine' 
-                    args '-v /var/tmp/maven:/var/maven/.m2 -e MAVEN_CONFIG=/var/maven/.m2'
-                }
-            }
-            steps {
-                echo 'Running SonarQube analysis...'
-                withSonarQubeEnv('SonarQube') {
-                    withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                        sh 'mvn sonar:sonar -Dsonar.login=$SONAR_TOKEN'
-                    }
+                script {
+                    sh 'mvn test'
                 }
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                echo 'Building Docker image...'
                 script {
                     sh "docker build -t ${IMAGE_NAME}:latest ."
                 }
             }
         }
 
-    }
+        stage('Tag Docker Image') {
+            steps {
+                script {
+                    sh "docker tag ${IMAGE_NAME}:latest ${IMAGE_NAME}:${env.BUILD_NUMBER}"
+                }
+            }
+        }
 
-    post {
-        always {
-            echo 'Cleaning up...'
-            cleanWs()
-        }
-        success {
-            echo 'Pipeline succeeded!'
-        }
-        failure {
-            echo 'Pipeline failed.'
+        stage('Push Docker Image to Docker Hub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_PASS')]) {
+                    script {
+                        sh 'echo $DOCKERHUB_PASS | docker login -u $DOCKERHUB_USER --password-stdin'
+                        sh "docker push ${IMAGE_NAME}:latest"
+                        sh "docker push ${IMAGE_NAME}:${env.BUILD_NUMBER}"
+                    }
+                }
+            }
         }
     }
 }
