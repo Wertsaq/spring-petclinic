@@ -63,7 +63,7 @@ pipeline {
         stage('Archive Artifacts') {
             steps {
                 echo 'Archiving build artifacts...'
-                archiveArtifacts artifacts: "spring-petclinic-3.3.0-SNAPSHOT.jar", fingerprint: true
+                archiveArtifacts artifacts: "target/spring-petclinic-3.3.0-SNAPSHOT.jar", fingerprint: true
             }
         }   
 
