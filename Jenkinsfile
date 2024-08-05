@@ -60,6 +60,13 @@ pipeline {
             }
         }
 
+        stage('Archive Artifacts') {
+            steps {
+                echo 'Archiving build artifacts...'
+                archiveArtifacts artifacts: "spring-petclinic-3.3.0-SNAPSHOT.jar", fingerprint: true
+            }
+        }   
+
         stage('Build Docker Image') {
             steps {
                 echo 'Building Docker image...'
