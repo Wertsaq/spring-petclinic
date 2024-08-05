@@ -29,8 +29,13 @@ pipeline {
         }
 
 
-
         stage('Archive Artifacts') {
+            agent {
+                docker {
+                    image 'maven:3.9.8-eclipse-temurin-22-alpine'
+                    args '-v /var/tmp/maven:/var/maven/.m2 -e MAVEN_CONFIG=/var/maven/.m2'
+                }
+            }
             steps {
                 sh 'pwd'
                 sh 'ls -la'
