@@ -40,6 +40,12 @@ pipeline {
                 echo 'Running Maven tests...'
                 sh 'mvn test'
             }
+            post {
+                always {
+                    echo 'Archiving JUnit test results...'
+                    junit '**/target/surefire-reports/*.xml'
+                }
+            }
         }
 
         stage('SonarQube Analysis') {
