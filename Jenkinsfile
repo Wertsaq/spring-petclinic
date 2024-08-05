@@ -60,10 +60,12 @@ pipeline {
             }
         }
 
-        stage('Archive Artifacts') {
+        stage('Build Docker Image') {
             steps {
-                echo 'Archiving build artifacts...'
-                archiveArtifacts artifacts: "target/*-SNAPSHOT.jar", fingerprint: true
+                echo 'Building Docker image...'
+                script {
+                    sh "docker build -t ${IMAGE_NAME}:latest ."
+                }
             }
         }
     }
