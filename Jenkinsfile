@@ -79,6 +79,7 @@ pipeline {
         }
 
         stage('Build Docker Image') {
+            agent any
             steps {
                 script {
                     sh "docker build -t ${IMAGE_NAME}:latest ."
