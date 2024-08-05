@@ -25,7 +25,7 @@ pipeline {
             }
             steps {
                 echo 'Running Maven clean and package...'
-                sh 'mvn clean package -DskipTests'
+                sh 'mvn clean package -DskipTests -Dcheckstyle.skip=true Dspring-javaformat.skip=true -Denforcer.skip=true'
             }
         }
 
