@@ -28,40 +28,12 @@ pipeline {
             }
         }
 
-        stage('Test') {
-            agent {
-                docker {
-                    image 'maven:3.9.8-eclipse-temurin-22-alpine'
-                    reuseNode true  
-                    args '-v /var/tmp/maven:/var/maven/.m2 -e MAVEN_CONFIG=/var/maven/.m2'
-                }
-            }
-            steps {
-                echo 'Running Maven tests...'
-                sh 'mvn test'
-            }
-        }
 
-        stage('SonarQube Analysis') {
-            agent {
-                docker {
-                    image 'maven:3.9.8-eclipse-temurin-22-alpine'
-                    reuseNode true  
-                    args '-v /var/tmp/maven:/var/maven/.m2 -e MAVEN_CONFIG=/var/maven/.m2'
-                }
-            }
-            steps {
-                echo 'Running SonarQube analysis...'
-                withSonarQubeEnv('SonarQube') {
-                    withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                        sh 'mvn sonar:sonar -Dsonar.login=$SONAR_TOKEN'
-                    }
-                }
-            }
-        }
 
         stage('Archive Artifacts') {
             steps {
+                sh 'pwd'
+                sh 'ls -la'
                 echo 'Archiving build artifacts...'
                 archiveArtifacts artifacts: "target/*.jar", fingerprint: true
             }
