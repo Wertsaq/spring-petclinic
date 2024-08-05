@@ -28,7 +28,7 @@ pipeline {
             }
         }
 
-        stage('Test') {
+        stage('Archive Artifacts') {
             agent {
                 docker {
                     image 'maven:3.9.8-eclipse-temurin-22-alpine'
@@ -37,8 +37,10 @@ pipeline {
                 }
             }
             steps {
-                echo 'Running Maven tests...'
-                sh 'mvn test'
+                sh 'pwd'
+                sh 'ls -la'
+                echo 'Archiving build artifacts...'
+                archiveArtifacts artifacts: "target/*.jar", fingerprint: true
             }
         }
 
@@ -60,7 +62,7 @@ pipeline {
             }
         }
 
-        stage('Archive Artifacts') {
+        stage('Test') {
             agent {
                 docker {
                     image 'maven:3.9.8-eclipse-temurin-22-alpine'
@@ -69,10 +71,8 @@ pipeline {
                 }
             }
             steps {
-                sh 'pwd'
-                sh 'ls -la'
-                echo 'Archiving build artifacts...'
-                archiveArtifacts artifacts: "target/*.jar", fingerprint: true
+                echo 'Running Maven tests...'
+                sh 'mvn test'
             }
         }
 
