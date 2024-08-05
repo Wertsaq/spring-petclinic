@@ -1,5 +1,5 @@
 pipeline {
-    agent none
+    agent any
 
     environment {
         JAVA_TOOL_OPTIONS = '-Duser.home=/var/maven'
@@ -83,7 +83,6 @@ pipeline {
         }
 
         stage('Tag Docker Image') {
-            agent any
             steps {
                 echo 'Tagging Docker image...'
                 script {
@@ -93,7 +92,6 @@ pipeline {
         }
 
         stage('Push Docker Image to Docker Hub') {
-            agent any
             steps {
                 echo 'Pushing Docker image to Docker Hub...'
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_PASS')]) {
