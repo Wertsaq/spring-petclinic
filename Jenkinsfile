@@ -69,6 +69,8 @@ pipeline {
                 }
             }
             steps {
+                sh 'pwd'
+                sh 'ls -la'
                 echo 'Archiving build artifacts...'
                 archiveArtifacts artifacts: "target/*.jar", fingerprint: true
             }
