@@ -109,6 +109,18 @@ pipeline {
                 }
             }
         }
+
+        stage('Deploy') {
+            steps {
+                script {
+                    echo 'Deploying application...'
+                    sh "docker pull ${IMAGE_NAME}:${env.BUILD_NUMBER}"
+                    sh "docker stop petclinic || true"
+                    sh "docker rm petclinic || true"
+                    sh "docker run -d --name petclinic -p 8080:8080 ${IMAGE_NAME}:${env.BUILD_NUMBER}"
+                }
+            }
+        }
     }
 
     post {
