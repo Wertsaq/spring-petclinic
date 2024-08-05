@@ -42,13 +42,6 @@ pipeline {
             }
         }
 
-        stage('Archive Artifacts') {
-            steps {
-                echo 'Archiving build artifacts...'
-                archiveArtifacts artifacts: "target/spring-petclinic-3.3.0-SNAPSHOT.jar", fingerprint: true
-            }
-        }   
-
         stage('SonarQube Analysis') {
             agent {
                 docker {
@@ -67,26 +60,11 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Archive Artifacts') {
             steps {
-                echo 'Building Docker image...'
-                script {
-                    sh "docker build -t ${IMAGE_NAME}:latest ."
-                }
+                echo 'Archiving build artifacts...'
+                archiveArtifacts artifacts: "target/*.jar", fingerprint: true
             }
-        }
-    }
-
-    post {
-        always {
-            echo 'Cleaning up...'
-            cleanWs()
-        }
-        success {
-            echo 'Pipeline succeeded!'
-        }
-        failure {
-            echo 'Pipeline failed.'
         }
     }
 }
