@@ -117,7 +117,7 @@ pipeline {
                     sh "docker pull ${IMAGE_NAME}:${env.BUILD_NUMBER}"
                     sh "docker stop petclinic || true"
                     sh "docker rm petclinic || true"
-                    sh "docker run -d --name petclinic -p 8080:8080 ${IMAGE_NAME}:${env.BUILD_NUMBER}"
+                    sh "docker run -d --name petclinic -p 8081:8080 ${IMAGE_NAME}:${env.BUILD_NUMBER}"
                 }
             }
         }
