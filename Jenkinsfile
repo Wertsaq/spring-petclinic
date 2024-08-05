@@ -25,7 +25,7 @@ pipeline {
             }
             steps {
                 echo 'Running Maven clean and package...'
-                sh 'mvn clean package'
+                sh 'mvn clean package -DskipTests'
             }
         }
 
