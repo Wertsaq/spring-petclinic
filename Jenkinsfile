@@ -42,6 +42,13 @@ pipeline {
             }
         }
 
+        stage('Archive Artifacts') {
+            steps {
+                echo 'Archiving build artifacts...'
+                archiveArtifacts artifacts: "target/spring-petclinic-3.3.0-SNAPSHOT.jar", fingerprint: true
+            }
+        }   
+
         stage('SonarQube Analysis') {
             agent {
                 docker {
@@ -59,13 +66,6 @@ pipeline {
                 }
             }
         }
-
-        stage('Archive Artifacts') {
-            steps {
-                echo 'Archiving build artifacts...'
-                archiveArtifacts artifacts: "target/spring-petclinic-3.3.0-SNAPSHOT.jar", fingerprint: true
-            }
-        }   
 
         stage('Build Docker Image') {
             steps {
