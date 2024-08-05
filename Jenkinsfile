@@ -1,5 +1,5 @@
 pipeline {
-    agent any
+    agent none
 
     environment {
         JAVA_TOOL_OPTIONS = '-Duser.home=/var/maven'
@@ -19,6 +19,7 @@ pipeline {
             agent {
                 docker {
                     image 'maven:3.9.8-eclipse-temurin-22-alpine'
+                    reuseNode true  
                     args '-v /var/tmp/maven:/var/maven/.m2 -e MAVEN_CONFIG=/var/maven/.m2'
                 }
             }
@@ -72,6 +73,7 @@ pipeline {
         }
 
         stage('Build Docker Image') {
+            agent any
             steps {
                 echo 'Building Docker image...'
                 script {
@@ -81,6 +83,7 @@ pipeline {
         }
 
         stage('Tag Docker Image') {
+            agent any
             steps {
                 echo 'Tagging Docker image...'
                 script {
@@ -90,6 +93,7 @@ pipeline {
         }
 
         stage('Push Docker Image to Docker Hub') {
+            agent any
             steps {
                 echo 'Pushing Docker image to Docker Hub...'
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_PASS')]) {
