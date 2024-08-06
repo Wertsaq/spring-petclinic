@@ -125,6 +125,9 @@ pipeline {
         stage('Health Check') {
             steps {
                 script {
+                    echo 'Waiting for the application to start...'
+                    sleep(time: 30, unit: 'SECONDS') 
+                    
                     echo 'Performing health check...'
                     def statusCode = sh(
                         script: 'curl -o /dev/null -s -w "%{http_code}" http://192.168.56.122:8081/actuator/health',
