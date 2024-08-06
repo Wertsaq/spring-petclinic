@@ -7,6 +7,10 @@ pipeline {
         IMAGE_NAME = 'wertsaq/petclinic'
     }
 
+    triggers {
+        pollSCM('H/5 * * * *')
+    }
+
     stages {
         stage('Clone repository') {
             steps {
