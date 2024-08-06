@@ -120,12 +120,8 @@ pipeline {
                         echo 'Deploying application to remote server...'
                         sshagent (credentials: ["${REMOTE_SSH_CREDENTIALS}"]) {
                             sh """
-                            ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} << EOF
-                                echo $DOCKERHUB_PASS | docker login -u $DOCKERHUB_USER --password-stdin
-                                docker pull ${IMAGE_NAME}:${env.BUILD_NUMBER}
-                                docker stop petclinic || true
-                                docker rm petclinic || true
-                                docker run -d --name petclinic -p 8081:8080 ${IMAGE_NAME}:${env.BUILD_NUMBER}
+                            ssh -o StrictHostKeyChecking=no debian@192.168.56.107 << EOF
+                                whoami
                             EOF
                             """
                         }
