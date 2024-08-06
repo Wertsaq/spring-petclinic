@@ -126,19 +126,17 @@ pipeline {
             steps {
                 script {
                     echo 'Performing health check...'
-                    sh '''
-                    for i in {1..10}; do
-                        if curl -s http://192.168.56.122:8081/actuator/health | grep '"status":"UP"' > /dev/null; then
-                            echo "Health check passed!"
-                            exit 0
-                        else
-                            echo "Health check failed. Retrying in 5 seconds..."
-                            sleep 5
-                        fi
-                    done
-                    echo "Health check failed after 10 attempts."
-                    exit 1
-                    '''
+                    def statusCode = sh(
+                        script: 'curl -o /dev/null -s -w "%{http_code}" http://192.168.56.122:8081/actuator/health',
+                        returnStdout: true
+                    ).trim()
+
+                    if (statusCode == '200') {
+                        echo "Health check passed with status code 200!"
+                    } else {
+                        echo "Health check failed with status code ${statusCode}."
+                        error("Health check failed")
+                    }
                 }
             }
         }
