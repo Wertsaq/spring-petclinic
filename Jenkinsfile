@@ -5,7 +5,6 @@ pipeline {
         JAVA_TOOL_OPTIONS = '-Duser.home=/var/maven'
         SONAR_USER_HOME = '/var/tmp/sonar'
         IMAGE_NAME = 'wertsaq/petclinic'
-        REMOTE_SSH_CREDENTIALS = 'ssh-deploy-prod-server'
     }
 
     stages {
@@ -113,19 +112,12 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                withCredentials([string(credentialsId: 'remote-user-id', variable: 'REMOTE_USER'),
-                                 string(credentialsId: 'remote-host-id', variable: 'REMOTE_HOST'),
-                                 usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_PASS')]) {
-                    script {
-                        echo 'Deploying application to remote server...'
-                        sshagent (credentials: ["${REMOTE_SSH_CREDENTIALS}"]) {
-                            sh """
-                            ssh -o StrictHostKeyChecking=no debian@192.168.56.107 << EOF
-                                whoami
-                            EOF
-                            """
-                        }
-                    }
+                script {
+                    echo 'Deploying application...'
+                    sh "docker pull ${IMAGE_NAME}:${env.BUILD_NUMBER}"
+                    sh "docker stop petclinic || true"
+                    sh "docker rm petclinic || true"
+                    sh "docker run -d --name petclinic -p 8081:8080 ${IMAGE_NAME}:${env.BUILD_NUMBER}"
                 }
             }
         }
