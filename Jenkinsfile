@@ -122,17 +122,15 @@ pipeline {
                 script {
                     echo "Deploying application to ${params.ENVIRONMENT} environment..."
 
-                    def serverAddress = ''
-                    def port = ''
                     if (params.ENVIRONMENT == 'dev') {
-                        serverAddress = '192.168.56.122'
-                        port = '8081'
+                        env.SERVER_ADDRESS = '192.168.56.122'
+                        env.PORT = '8081'
                     } else if (params.ENVIRONMENT == 'qa') {
-                        serverAddress = '192.168.56.122'
-                        port = '8082'
+                        env.SERVER_ADDRESS = '192.168.56.122'
+                        env.PORT = '8082'
                     } else if (params.ENVIRONMENT == 'devops') {
-                        serverAddress = '192.168.56.122'
-                        port = '8083'
+                        env.SERVER_ADDRESS = '192.168.56.122'
+                        env.PORT = '8083'
                     } else {
                         error("Unknown environment: ${params.ENVIRONMENT}")
                     }
@@ -140,7 +138,7 @@ pipeline {
                     sh "docker pull ${IMAGE_NAME}:${env.BUILD_NUMBER}"
                     sh "docker stop petclinic || true"
                     sh "docker rm petclinic || true"
-                    sh "docker run -d --name petclinic -p ${port}:8080 ${IMAGE_NAME}:${env.BUILD_NUMBER}"
+                    sh "docker run -d --name petclinic -p ${env.PORT}:8080 ${IMAGE_NAME}:${env.BUILD_NUMBER}"
                 }
             }
         }
@@ -151,7 +149,7 @@ pipeline {
                     echo 'Waiting for the application to start...'
                     sleep(time: 30, unit: 'SECONDS') 
 
-                    def healthCheckUrl = "http://${serverAddress}:${port}/actuator/health"
+                    def healthCheckUrl = "http://${env.SERVER_ADDRESS}:${env.PORT}/actuator/health"
 
                     echo "Performing health check on ${healthCheckUrl}..."
                     def statusCode = sh(
