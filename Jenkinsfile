@@ -138,6 +138,9 @@ pipeline {
                         error("Unknown environment: ${params.ENVIRONMENT}")
                     }
 
+                    env.SERVER_CREDENTIALS_ID = serverCredentialsId
+                    env.PORT_CREDENTIALS_ID = portCredentialsId
+
                     withCredentials([string(credentialsId: serverCredentialsId, variable: 'SERVER_ADDRESS'),
                                      string(credentialsId: portCredentialsId, variable: 'PORT')]) {
                         sh "docker pull ${IMAGE_NAME}:${env.BUILD_NUMBER}"
@@ -155,8 +158,8 @@ pipeline {
                     echo 'Waiting for the application to start...'
                     sleep(time: 30, unit: 'SECONDS') 
 
-                    withCredentials([string(credentialsId: serverCredentialsId, variable: 'SERVER_ADDRESS'),
-                                     string(credentialsId: portCredentialsId, variable: 'PORT')]) {
+                    withCredentials([string(credentialsId: env.SERVER_CREDENTIALS_ID, variable: 'SERVER_ADDRESS'),
+                                     string(credentialsId: env.PORT_CREDENTIALS_ID, variable: 'PORT')]) {
                         def healthCheckUrl = "http://${SERVER_ADDRESS}:${PORT}/actuator/health"
 
                         echo "Performing health check on ${healthCheckUrl}..."
