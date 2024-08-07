@@ -7,6 +7,10 @@ pipeline {
         IMAGE_NAME = 'wertsaq/petclinic'
     }
 
+    parameters {
+        choice(name: 'ENVIRONMENT', choices: ['dev', 'qa', 'devops'], description: 'Select the deployment environment')
+    }
+
     triggers {
         pollSCM('H/5 * * * *')
     }
