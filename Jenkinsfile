@@ -134,7 +134,7 @@ pipeline {
                         def remoteHost = "debian@192.168.56.107"
 
                         sh """
-                        ssh -o StrictHostKeyChecking=no ${remoteHost} << EOF
+                        ssh ${remoteHost} << EOF
                             docker pull ${IMAGE_NAME}:${env.BUILD_NUMBER}
                             docker stop petclinic || true
                             docker rm petclinic || true
