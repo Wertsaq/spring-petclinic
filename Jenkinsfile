@@ -37,6 +37,7 @@ pipeline {
             }
             post {
                 always {
+                    echo 'Creating build artifact...'
                     archiveArtifacts artifacts: "target/*.jar", fingerprint: true
                 }
             }
