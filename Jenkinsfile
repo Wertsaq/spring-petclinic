@@ -5,8 +5,9 @@ pipeline {
         JAVA_TOOL_OPTIONS = '-Duser.home=/var/maven'
         SONAR_USER_HOME = '/var/tmp/sonar'
         IMAGE_NAME = 'wertsaq/petclinic'
-        SERVER_ADDRESS = getServerAddress(params.ENVIRONMENT)
-        PORT = getPort(params.ENVIRONMENT)
+        // Define default values, they will be overridden in stages
+        SERVER_ADDRESS = ''
+        PORT = ''
     }
 
     parameters {
@@ -88,7 +89,6 @@ pipeline {
             }
         }
 
-
         stage('Build Docker Image') {
             steps {
                 echo 'Building Docker image...'
@@ -124,6 +124,20 @@ pipeline {
             steps {
                 script {
                     echo "Deploying application to ${params.ENVIRONMENT} environment..."
+
+                    if (params.ENVIRONMENT == 'dev') {
+                        env.SERVER_ADDRESS = '192.168.56.122'
+                        env.PORT = '8081'
+                    } else if (params.ENVIRONMENT == 'qa') {
+                        env.SERVER_ADDRESS = '192.168.56.122'
+                        env.PORT = '8082'
+                    } else if (params.ENVIRONMENT == 'devops') {
+                        env.SERVER_ADDRESS = '192.168.56.122'
+                        env.PORT = '8083'
+                    } else {
+                        error("Unknown environment: ${params.ENVIRONMENT}")
+                    }
+                    
                     sh "docker pull ${IMAGE_NAME}:${env.BUILD_NUMBER}"
                     sh "docker stop petclinic || true"
                     sh "docker rm petclinic || true"
@@ -137,7 +151,7 @@ pipeline {
                 script {
                     echo 'Waiting for the application to start...'
                     sleep(time: 30, unit: 'SECONDS') 
-                    
+
                     def healthCheckUrl = "http://${SERVER_ADDRESS}:${PORT}/actuator/health"
 
                     echo "Performing health check on ${healthCheckUrl}..."
@@ -168,31 +182,5 @@ pipeline {
         failure {
             echo 'Pipeline failed.'
         }
-    }
-}
-
-def getServerAddress(environment) {
-    switch (environment) {
-        case 'dev':
-            return '192.168.56.122'
-        case 'qa':
-            return '192.168.56.122'
-        case 'devops':
-            return '192.168.56.122'
-        default:
-            error("Unknown environment: ${environment}")
-    }
-}
-
-def getPort(environment) {
-    switch (environment) {
-        case 'dev':
-            return '8081'
-        case 'qa':
-            return '8082'
-        case 'devops':
-            return '8083'
-        default:
-            error("Unknown environment: ${environment}")
     }
 }
