@@ -131,10 +131,10 @@ pipeline {
                 script {
                     echo 'Deploying application on remote server...'
                     sshagent(credentials: ['ssh-deploy-prod-server']) {
-                        def remoteHost = "jenkins@192.168.56.107"
+                        def remoteHost = "debian@192.168.56.107"
 
                         sh """
-                        ssh ${remoteHost} << EOF
+                        ssh -o StrictHostKeyChecking=no ${remoteHost} << EOF
                             docker pull ${IMAGE_NAME}:${env.BUILD_NUMBER}
                             docker stop petclinic || true
                             docker rm petclinic || true
