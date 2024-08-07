@@ -122,23 +122,29 @@ pipeline {
                 script {
                     echo "Deploying application to ${params.ENVIRONMENT} environment..."
 
+                    def serverCredentialsId = ''
+                    def portCredentialsId = ''
+
                     if (params.ENVIRONMENT == 'dev') {
-                        env.SERVER_ADDRESS = '192.168.56.122'
-                        env.PORT = '8081'
+                        serverCredentialsId = 'dev-server-address'
+                        portCredentialsId = 'dev-port'
                     } else if (params.ENVIRONMENT == 'qa') {
-                        env.SERVER_ADDRESS = '192.168.56.122'
-                        env.PORT = '8082'
+                        serverCredentialsId = 'qa-server-address'
+                        portCredentialsId = 'qa-port'
                     } else if (params.ENVIRONMENT == 'devops') {
-                        env.SERVER_ADDRESS = '192.168.56.122'
-                        env.PORT = '8083'
+                        serverCredentialsId = 'devops-server-address'
+                        portCredentialsId = 'devops-port'
                     } else {
                         error("Unknown environment: ${params.ENVIRONMENT}")
                     }
 
-                    sh "docker pull ${IMAGE_NAME}:${env.BUILD_NUMBER}"
-                    sh "docker stop petclinic || true"
-                    sh "docker rm petclinic || true"
-                    sh "docker run -d --name petclinic -p ${env.PORT}:8080 ${IMAGE_NAME}:${env.BUILD_NUMBER}"
+                    withCredentials([string(credentialsId: serverCredentialsId, variable: 'SERVER_ADDRESS'),
+                                     string(credentialsId: portCredentialsId, variable: 'PORT')]) {
+                        sh "docker pull ${IMAGE_NAME}:${env.BUILD_NUMBER}"
+                        sh "docker stop petclinic || true"
+                        sh "docker rm petclinic || true"
+                        sh "docker run -d --name petclinic -p ${PORT}:8080 ${IMAGE_NAME}:${env.BUILD_NUMBER}"
+                    }
                 }
             }
         }
@@ -149,19 +155,22 @@ pipeline {
                     echo 'Waiting for the application to start...'
                     sleep(time: 30, unit: 'SECONDS') 
 
-                    def healthCheckUrl = "http://${env.SERVER_ADDRESS}:${env.PORT}/actuator/health"
+                    withCredentials([string(credentialsId: serverCredentialsId, variable: 'SERVER_ADDRESS'),
+                                     string(credentialsId: portCredentialsId, variable: 'PORT')]) {
+                        def healthCheckUrl = "http://${SERVER_ADDRESS}:${PORT}/actuator/health"
 
-                    echo "Performing health check on ${healthCheckUrl}..."
-                    def statusCode = sh(
-                        script: "curl -o /dev/null -s -w \"%{http_code}\" ${healthCheckUrl}",
-                        returnStdout: true
-                    ).trim()
+                        echo "Performing health check on ${healthCheckUrl}..."
+                        def statusCode = sh(
+                            script: "curl -o /dev/null -s -w \"%{http_code}\" ${healthCheckUrl}",
+                            returnStdout: true
+                        ).trim()
 
-                    if (statusCode == '200') {
-                        echo "Health check passed with status code 200!"
-                    } else {
-                        echo "Health check failed with status code ${statusCode}."
-                        error("Health check failed")
+                        if (statusCode == '200') {
+                            echo "Health check passed with status code 200!"
+                        } else {
+                            echo "Health check failed with status code ${statusCode}."
+                            error("Health check failed")
+                        }
                     }
                 }
             }
