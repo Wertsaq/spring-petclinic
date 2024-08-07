@@ -130,7 +130,7 @@ pipeline {
             steps {
                 script {
                     echo 'Deploying application on remote server...'
-                    sshagent('ssh-deploy-prod-server') {
+                    sshagent(['ssh-deploy-prod-server']) {
                         def remoteHost = "debian 192.168.56.107"
 
                         sh """
