@@ -5,9 +5,6 @@ pipeline {
         JAVA_TOOL_OPTIONS = '-Duser.home=/var/maven'
         SONAR_USER_HOME = '/var/tmp/sonar'
         IMAGE_NAME = 'wertsaq/petclinic'
-        // Define default values, they will be overridden in stages
-        SERVER_ADDRESS = ''
-        PORT = ''
     }
 
     parameters {
@@ -125,23 +122,25 @@ pipeline {
                 script {
                     echo "Deploying application to ${params.ENVIRONMENT} environment..."
 
+                    def serverAddress = ''
+                    def port = ''
                     if (params.ENVIRONMENT == 'dev') {
-                        env.SERVER_ADDRESS = '192.168.56.122'
-                        env.PORT = '8081'
+                        serverAddress = '192.168.56.122'
+                        port = '8081'
                     } else if (params.ENVIRONMENT == 'qa') {
-                        env.SERVER_ADDRESS = '192.168.56.122'
-                        env.PORT = '8082'
+                        serverAddress = '192.168.56.122'
+                        port = '8082'
                     } else if (params.ENVIRONMENT == 'devops') {
-                        env.SERVER_ADDRESS = '192.168.56.122'
-                        env.PORT = '8083'
+                        serverAddress = '192.168.56.122'
+                        port = '8083'
                     } else {
                         error("Unknown environment: ${params.ENVIRONMENT}")
                     }
-                    
+
                     sh "docker pull ${IMAGE_NAME}:${env.BUILD_NUMBER}"
                     sh "docker stop petclinic || true"
                     sh "docker rm petclinic || true"
-                    sh "docker run -d --name petclinic -p ${PORT}:8080 ${IMAGE_NAME}:${env.BUILD_NUMBER}"
+                    sh "docker run -d --name petclinic -p ${port}:8080 ${IMAGE_NAME}:${env.BUILD_NUMBER}"
                 }
             }
         }
@@ -152,7 +151,7 @@ pipeline {
                     echo 'Waiting for the application to start...'
                     sleep(time: 30, unit: 'SECONDS') 
 
-                    def healthCheckUrl = "http://${SERVER_ADDRESS}:${PORT}/actuator/health"
+                    def healthCheckUrl = "http://${serverAddress}:${port}/actuator/health"
 
                     echo "Performing health check on ${healthCheckUrl}..."
                     def statusCode = sh(
