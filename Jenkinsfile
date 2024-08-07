@@ -114,17 +114,38 @@ pipeline {
             }
         }
 
+        //stage('Deploy') {
+        //    steps {
+        //        script {
+        //            echo 'Deploying application...'
+        //            sh "docker pull ${IMAGE_NAME}:${env.BUILD_NUMBER}"
+        //            sh "docker stop petclinic || true"
+        //            sh "docker rm petclinic || true"
+        //            sh "docker run -d --name petclinic -p 8081:8080 ${IMAGE_NAME}:${env.BUILD_NUMBER}"
+        //        }
+        //    }
+        //}
+
         stage('Deploy') {
             steps {
                 script {
-                    echo 'Deploying application...'
-                    sh "docker pull ${IMAGE_NAME}:${env.BUILD_NUMBER}"
-                    sh "docker stop petclinic || true"
-                    sh "docker rm petclinic || true"
-                    sh "docker run -d --name petclinic -p 8081:8080 ${IMAGE_NAME}:${env.BUILD_NUMBER}"
+                    echo 'Deploying application on remote server...'
+                    sshagent('ssh-deploy-prod-server') {
+                        def remoteHost = "debian 192.168.56.107"
+
+                        sh """
+                        ssh -o StrictHostKeyChecking=no ${remoteHost} << EOF
+                            docker pull ${IMAGE_NAME}:${env.BUILD_NUMBER}
+                            docker stop petclinic || true
+                            docker rm petclinic || true
+                            docker run -d --name petclinic -p 8081:8080 ${IMAGE_NAME}:${env.BUILD_NUMBER}
+                        EOF
+                        """
+                    }
                 }
             }
         }
+
 
         stage('Health Check') {
             steps {
@@ -134,7 +155,7 @@ pipeline {
                     
                     echo 'Performing health check...'
                     def statusCode = sh(
-                        script: 'curl -o /dev/null -s -w "%{http_code}" http://192.168.56.122:8081/actuator/health',
+                        script: 'curl -o /dev/null -s -w "%{http_code}" http://192.168.56.107:8081/actuator/health',
                         returnStdout: true
                     ).trim()
 
