@@ -35,6 +35,11 @@ pipeline {
                 echo 'Running Maven clean and package...'
                 sh 'mvn clean package -DskipTests -Dcheckstyle.skip=true -Dspring-javaformat.skip=true -Denforcer.skip=true'
             }
+            post {
+                always {
+                    archiveArtifacts artifacts: "target/*.jar", fingerprint: true
+                }
+            }
         }
 
         stage('Test') {
@@ -70,19 +75,6 @@ pipeline {
                         sh 'mvn sonar:sonar -Dsonar.login=$SONAR_TOKEN'
                     }
                 }
-            }
-        }
-
-        stage('Archive Artifacts') {
-            agent {
-                docker {
-                    image 'maven:3.9.8-eclipse-temurin-22-alpine' 
-                    args '-v /var/tmp/maven:/var/maven/.m2 -e MAVEN_CONFIG=/var/maven/.m2'
-                }
-            }
-            steps {
-                echo 'Archiving build artifacts...'
-                archiveArtifacts artifacts: "target/*.jar", fingerprint: true
             }
         }
 
