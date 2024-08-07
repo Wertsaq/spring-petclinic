@@ -5,6 +5,8 @@ pipeline {
         JAVA_TOOL_OPTIONS = '-Duser.home=/var/maven'
         SONAR_USER_HOME = '/var/tmp/sonar'
         IMAGE_NAME = 'wertsaq/petclinic'
+        SERVER_ADDRESS = getServerAddress(params.ENVIRONMENT)
+        PORT = getPort(params.ENVIRONMENT)
     }
 
     parameters {
@@ -121,11 +123,11 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    echo 'Deploying application...'
+                    echo "Deploying application to ${params.ENVIRONMENT} environment..."
                     sh "docker pull ${IMAGE_NAME}:${env.BUILD_NUMBER}"
                     sh "docker stop petclinic || true"
                     sh "docker rm petclinic || true"
-                    sh "docker run -d --name petclinic -p 8081:8080 ${IMAGE_NAME}:${env.BUILD_NUMBER}"
+                    sh "docker run -d --name petclinic -p ${PORT}:8080 ${IMAGE_NAME}:${env.BUILD_NUMBER}"
                 }
             }
         }
@@ -136,9 +138,11 @@ pipeline {
                     echo 'Waiting for the application to start...'
                     sleep(time: 30, unit: 'SECONDS') 
                     
-                    echo 'Performing health check...'
+                    def healthCheckUrl = "http://${SERVER_ADDRESS}:${PORT}/actuator/health"
+
+                    echo "Performing health check on ${healthCheckUrl}..."
                     def statusCode = sh(
-                        script: 'curl -o /dev/null -s -w "%{http_code}" http://192.168.56.122:8081/actuator/health',
+                        script: "curl -o /dev/null -s -w \"%{http_code}\" ${healthCheckUrl}",
                         returnStdout: true
                     ).trim()
 
@@ -164,5 +168,31 @@ pipeline {
         failure {
             echo 'Pipeline failed.'
         }
+    }
+}
+
+def getServerAddress(environment) {
+    switch (environment) {
+        case 'dev':
+            return '192.168.56.122'
+        case 'qa':
+            return '192.168.56.122'
+        case 'devops':
+            return '192.168.56.122'
+        default:
+            error("Unknown environment: ${environment}")
+    }
+}
+
+def getPort(environment) {
+    switch (environment) {
+        case 'dev':
+            return '8081'
+        case 'qa':
+            return '8082'
+        case 'devops':
+            return '8083'
+        default:
+            error("Unknown environment: ${environment}")
     }
 }
