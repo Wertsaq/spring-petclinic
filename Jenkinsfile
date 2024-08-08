@@ -43,41 +43,37 @@ pipeline {
             }
         }
 
-        stage('Parallel Testing and Analysis') {
-            parallel {
-                stage('Test') {
-                    agent {
-                        docker {
-                            image 'maven:3.9.8-eclipse-temurin-22-alpine'
-                            args '-v /var/tmp/maven:/var/maven/.m2 -e MAVEN_CONFIG=/var/maven/.m2'
-                        }
-                    }
-                    steps {
-                        echo 'Running Maven tests...'
-                        sh 'mvn test'
-                    }
-                    post {
-                        always {
-                            echo 'Archiving JUnit test results...'
-                            junit '**/target/surefire-reports/*.xml'
-                        }
-                    }
+        stage('Test') {
+            agent {
+                docker {
+                    image 'maven:3.9.8-eclipse-temurin-22-alpine'
+                    args '-v /var/tmp/maven:/var/maven/.m2 -e MAVEN_CONFIG=/var/maven/.m2'
                 }
+            }
+            steps {
+                echo 'Running Maven tests...'
+                sh 'mvn test'
+            }
+            post {
+                always {
+                    echo 'Archiving JUnit test results...'
+                    junit '**/target/surefire-reports/*.xml'
+                }
+            }
+        }
 
-                stage('SonarQube Analysis') {
-                    agent {
-                        docker {
-                            image 'maven:3.9.8-eclipse-temurin-22-alpine'
-                            args '-v /var/tmp/maven:/var/maven/.m2 -e MAVEN_CONFIG=/var/maven/.m2'
-                        }
-                    }
-                    steps {
-                        echo 'Running SonarQube analysis...'
-                        withSonarQubeEnv('SonarQube') {
-                            withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                                sh 'mvn sonar:sonar -Dsonar.login=$SONAR_TOKEN'
-                            }
-                        }
+        stage('SonarQube Analysis') {
+            agent {
+                docker {
+                    image 'maven:3.9.8-eclipse-temurin-22-alpine'
+                    args '-v /var/tmp/maven:/var/maven/.m2 -e MAVEN_CONFIG=/var/maven/.m2'
+                }
+            }
+            steps {
+                echo 'Running SonarQube analysis...'
+                withSonarQubeEnv('SonarQube') {
+                    withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                        sh 'mvn sonar:sonar -Dsonar.login=$SONAR_TOKEN'
                     }
                 }
             }
