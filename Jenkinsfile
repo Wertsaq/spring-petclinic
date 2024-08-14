@@ -33,13 +33,8 @@ pipeline {
             }
             steps {
                 echo 'Running Maven clean and package...'
-                sh 'mvn clean package -DskipTests -Dcheckstyle.skip=true -Dspring-javaformat.skip=true -Denforcer.skip=true'
-            }
-            post {
-                always {
-                    echo 'Creating build artifact...'
-                    archiveArtifacts artifacts: "target/*.jar", fingerprint: true
-                }
+                sh 'mvn clean compile'
+                //sh 'mvn clean package -DskipTests -Dcheckstyle.skip=true -Dspring-javaformat.skip=true -Denforcer.skip=true'
             }
         }
 
