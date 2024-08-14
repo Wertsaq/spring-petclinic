@@ -52,6 +52,7 @@ pipeline {
             }
             steps {
                 echo 'Running Maven tests...'
+                sh 'sleep 120'
                 sh 'mvn test'
             }
             post {
