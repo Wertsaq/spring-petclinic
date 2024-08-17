@@ -33,8 +33,8 @@ pipeline {
             }
             steps {
                 echo 'Running Maven clean and package...'
-                sh 'mvn clean compile'
-                //sh 'mvn clean package -DskipTests -Dcheckstyle.skip=true -Dspring-javaformat.skip=true -Denforcer.skip=true'
+                //sh 'mvn clean compile'
+                sh 'mvn clean package -DskipTests -Dcheckstyle.skip=true -Dspring-javaformat.skip=true -Denforcer.skip=true'
             }
         }
 
@@ -47,7 +47,6 @@ pipeline {
             }
             steps {
                 echo 'Running Maven tests...'
-                sh 'sleep 120'
                 sh 'mvn test'
             }
             post {
@@ -75,10 +74,15 @@ pipeline {
             }
         }
 
+        // TODO: create .jar file stage
+
         stage('Build Docker Image') {
             steps {
                 echo 'Building Docker image...'
                 script {
+
+                    // TODO: Add Nexus for .jar
+
                     sh "docker build -t ${IMAGE_NAME}:latest ."
                 }
             }
@@ -88,6 +92,9 @@ pipeline {
             steps {
                 echo 'Tagging Docker image...'
                 script {
+
+                    // TODO: Add   <version>3.3.0-SNAPSHOT</version>
+
                     sh "docker tag ${IMAGE_NAME}:latest ${IMAGE_NAME}:${env.BUILD_NUMBER}"
                 }
             }
@@ -132,9 +139,9 @@ pipeline {
 
                     withCredentials([string(credentialsId: serverCredentialsId, variable: 'SERVER_ADDRESS'),
                                      string(credentialsId: portCredentialsId, variable: 'PORT')]) {
-                        sh "docker pull ${IMAGE_NAME}:${env.BUILD_NUMBER}"
                         sh "docker stop petclinic || true"
                         sh "docker rm petclinic || true"
+                        sh "docker pull ${IMAGE_NAME}:${env.BUILD_NUMBER}"
                         sh "docker run -d --name petclinic -p ${PORT}:8080 ${IMAGE_NAME}:${env.BUILD_NUMBER}"
                     }
                 }
@@ -145,7 +152,9 @@ pipeline {
             steps {
                 script {
                     echo 'Waiting for the application to start...'
-                    sleep(time: 30, unit: 'SECONDS') 
+                    // sleep(time: 30, unit: 'SECONDS') 
+
+                    // TODO: for loop 
 
                     withCredentials([string(credentialsId: env.SERVER_CREDENTIALS_ID, variable: 'SERVER_ADDRESS'),
                                      string(credentialsId: env.PORT_CREDENTIALS_ID, variable: 'PORT')]) {
@@ -173,6 +182,7 @@ pipeline {
         always {
             echo 'Cleaning up...'
             cleanWs()
+            // add clean mvn
         }
         success {
             echo 'Pipeline succeeded!'
