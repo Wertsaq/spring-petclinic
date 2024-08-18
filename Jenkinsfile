@@ -1,14 +1,12 @@
 pipeline {
-    agent any
+    agent {
+        label 'java-docker-slave'
+    }
 
     environment {
         JAVA_TOOL_OPTIONS = '-Duser.home=/var/maven'
         SONAR_USER_HOME = '/var/tmp/sonar'
         IMAGE_NAME = 'wertsaq/petclinic'
-    }
-
-    parameters {
-        choice(name: 'ENVIRONMENT', choices: ['dev', 'qa', 'devops'], description: 'Select the deployment environment')
     }
 
     triggers {
@@ -24,13 +22,6 @@ pipeline {
         }
 
         stage('Build') {
-            agent {
-                docker {
-                    image 'maven:3.9.8-eclipse-temurin-22-alpine'
-                    reuseNode true  
-                    args '-v /var/tmp/maven:/var/maven/.m2 -e MAVEN_CONFIG=/var/maven/.m2'
-                }
-            }
             steps {
                 echo 'Running Maven clean and package...'
                 //sh 'mvn clean compile'
@@ -39,12 +30,6 @@ pipeline {
         }
 
         stage('Test') {
-            agent {
-                docker {
-                    image 'maven:3.9.8-eclipse-temurin-22-alpine'
-                    args '-v /var/tmp/maven:/var/maven/.m2 -e MAVEN_CONFIG=/var/maven/.m2'
-                }
-            }
             steps {
                 echo 'Running Maven tests...'
                 sh 'mvn test'
@@ -58,12 +43,6 @@ pipeline {
         }
 
         stage('SonarQube Analysis') {
-            agent {
-                docker {
-                    image 'maven:3.9.8-eclipse-temurin-22-alpine'
-                    args '-v /var/tmp/maven:/var/maven/.m2 -e MAVEN_CONFIG=/var/maven/.m2'
-                }
-            }
             steps {
                 echo 'Running SonarQube analysis...'
                 withSonarQubeEnv('SonarQube') {
