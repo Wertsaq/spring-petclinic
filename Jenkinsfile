@@ -68,7 +68,7 @@ pipeline {
                 echo 'Running SonarQube analysis...'
                 withSonarQubeEnv('SonarQube') {
                     withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                        sh 'mvn sonar:sonar -Dsonar.login=$SONAR_TOKEN'
+                        sh 'mvn sonar:sonar'
                     }
                 }
             }
@@ -86,7 +86,7 @@ pipeline {
                 archiveArtifacts artifacts: "target/*.jar", fingerprint: true
             }
         }
-        
+
         // TODO: create .jar file stage
 
         stage('Build Docker Image') {
