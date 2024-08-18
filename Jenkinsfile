@@ -75,12 +75,6 @@ pipeline {
         }
 
         stage('Archive Artifacts') {
-            agent {
-                docker {
-                    image 'maven:3.9.8-eclipse-temurin-22-alpine' 
-                    args '-v /var/tmp/maven:/var/maven/.m2 -e MAVEN_CONFIG=/var/maven/.m2'
-                }
-            }
             steps {
                 echo 'Archiving build artifacts...'
                 archiveArtifacts artifacts: "target/*.jar", fingerprint: true
