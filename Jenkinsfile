@@ -38,14 +38,17 @@ pipeline {
         }
 
         stage('Test') {
-        script {
-            try {
-                sh 'mvn test'
-            } catch (Exception e) {
-                echo "Some tests failed, skipping..."
-                currentBuild.result = 'UNSTABLE' 
+            steps {
+                echo 'Running Maven tests...'
+                script {
+                    try {
+                        sh 'mvn test'
+                    } catch (Exception e) {
+                        echo "Some tests failed, skipping..."
+                        currentBuild.result = 'UNSTABLE' 
+                    }
+                }
             }
-        }
             post {
                 always {
                     echo 'Archiving JUnit test results...'
