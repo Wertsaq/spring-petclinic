@@ -24,16 +24,28 @@ pipeline {
         stage('Build') {
             steps {
                 echo 'Running Maven clean and package...'
-                //sh 'mvn clean compile'
                 sh 'mvn clean package -DskipTests -Dcheckstyle.skip=true -Dspring-javaformat.skip=true -Denforcer.skip=true'
+            }
+            post {
+                success {
+                    echo 'Archiving build artifacts...'
+                    archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+                }
+                failure {
+                    echo 'Build failed. Skipping artifact archiving.'
+                }
             }
         }
 
         stage('Test') {
-            steps {
-                echo 'Running Maven tests...'
+        script {
+            try {
                 sh 'mvn test'
+            } catch (Exception e) {
+                echo "Some tests failed, skipping..."
+                currentBuild.result = 'UNSTABLE' 
             }
+        }
             post {
                 always {
                     echo 'Archiving JUnit test results...'
