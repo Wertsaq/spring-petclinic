@@ -21,11 +21,17 @@ pipeline {
             }
         }
 
-        stage('Build') {
+        stage('Clean') {
             steps {
-                echo 'Running Maven clean and package...'
-                //sh 'mvn clean compile'
-                sh 'mvn clean package -DskipTests -Dcheckstyle.skip=true -Dspring-javaformat.skip=true -Denforcer.skip=true'
+                echo 'Running Maven clean...'
+                sh 'mvn clean'
+            }
+        }
+
+        stage('Compile') {
+            steps {
+                echo 'Running Maven compile...'
+                sh 'mvn compile -DskipTests -Dcheckstyle.skip=true -Dspring-javaformat.skip=true -Denforcer.skip=true'
             }
         }
 
@@ -46,10 +52,15 @@ pipeline {
             steps {
                 echo 'Running SonarQube analysis...'
                 withSonarQubeEnv('SonarQube') {
-                    withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                        sh 'mvn sonar:sonar'
-                    }
+                    sh 'mvn sonar:sonar'
                 }
+            }
+        }
+
+        stage('Package') {
+            steps {
+                echo 'Running Maven package...'
+                sh 'mvn package -DskipTests -Dcheckstyle.skip=true -Dspring-javaformat.skip=true -Denforcer.skip=true'
             }
         }
 
@@ -60,15 +71,10 @@ pipeline {
             }
         }
 
-        // TODO: create .jar file stage
-
         stage('Build Docker Image') {
             steps {
                 echo 'Building Docker image...'
                 script {
-
-                    // TODO: Add Nexus for .jar
-
                     sh "docker build -t ${IMAGE_NAME}:latest ."
                 }
             }
@@ -78,9 +84,6 @@ pipeline {
             steps {
                 echo 'Tagging Docker image...'
                 script {
-
-                    // TODO: Add   <version>3.3.0-SNAPSHOT</version>
-
                     sh "docker tag ${IMAGE_NAME}:latest ${IMAGE_NAME}:${env.BUILD_NUMBER}"
                 }
             }
@@ -166,9 +169,8 @@ pipeline {
 
     post {
         always {
-            echo 'Cleaning up...'
+            echo 'Cleaning up workspace...'
             cleanWs()
-            // add clean mvn
         }
         success {
             echo 'Pipeline succeeded!'
