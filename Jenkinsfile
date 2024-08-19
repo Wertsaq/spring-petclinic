@@ -1,6 +1,6 @@
 pipeline {
     agent {
-        label 'java-docker-slave'
+        label 'jenkins-slave-maven-petclinic'
     }
 
     environment {
