@@ -1,5 +1,5 @@
 pipeline {
-    agent none
+    agent any
 
     environment {
         JAVA_TOOL_OPTIONS = '-Duser.home=/var/maven'
@@ -137,14 +137,18 @@ pipeline {
         }
 
         stage('Build Docker Image') {
+            agent {
+                label 'jenkins-slave-docker-petclinic'
+            }
             steps {
                 echo 'Building Docker image...'
                 script {
-                    sh 'docker build -t ${IMAGE_NAME}:latest -NEXUS_IP_PORT="192.168.56.126:8081" .'
+                    dir('workspace/petclinic') {
+                        sh 'docker build -t ${IMAGE_NAME}:latest --build-arg NEXUS_IP_PORT=192.168.56.126:8081 .'
+                    }
                 }
             }
         }
-
     }
 
     post {
