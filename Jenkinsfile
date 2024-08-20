@@ -135,6 +135,16 @@ pipeline {
                 }
             }
         }
+
+        stage('Build Docker Image') {
+            steps {
+                echo 'Building Docker image...'
+                script {
+                    sh 'docker build -t ${IMAGE_NAME}:latest -NEXUS_IP_PORT="192.168.56.126:8081" .'
+                }
+            }
+        }
+
     }
 
     post {
