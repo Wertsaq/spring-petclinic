@@ -152,7 +152,9 @@ pipeline {
             steps {
                 echo 'Tagging Docker image...'
                 script {
-                    sh "docker tag ${IMAGE_NAME}:latest ${IMAGE_NAME}:${env.POM_VERSION}"
+                    pom = readMavenPom file: "pom.xml"
+                    version = pom.version
+                    sh "docker tag ${IMAGE_NAME}:latest ${IMAGE_NAME}:${version}"
                 }
             }
         }
