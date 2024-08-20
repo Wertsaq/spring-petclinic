@@ -1,7 +1,5 @@
 pipeline {
-    agent {
-        label 'jenkins-slave-maven-petclinic'
-    }
+    agent none
 
     environment {
         JAVA_TOOL_OPTIONS = '-Duser.home=/var/maven'
@@ -21,6 +19,9 @@ pipeline {
 
     stages {
         stage('Clone repository') {
+            agent {
+                label 'jenkins-slave-maven-petclinic'
+            }
             steps {
                 echo 'Cloning the repository...'
                 dir('workspace') {
@@ -30,6 +31,9 @@ pipeline {
         }
 
         stage('Clean') {
+            agent {
+                label 'jenkins-slave-maven-petclinic'
+            }
             steps {
                 echo 'Running Maven clean...'
                 sh 'mvn clean'
@@ -37,6 +41,9 @@ pipeline {
         }
 
         stage('Compile') {
+            agent {
+                label 'jenkins-slave-maven-petclinic'
+            }
             steps {
                 echo 'Running Maven compile...'
                 sh 'mvn compile -DskipTests -Dcheckstyle.skip=true -Dspring-javaformat.skip=true -Denforcer.skip=true'
@@ -44,6 +51,9 @@ pipeline {
         }
 
         stage('Test') {
+            agent {
+                label 'jenkins-slave-maven-petclinic'
+            }
             steps {
                 echo 'Running Maven tests...'
                 sh 'mvn test -Dmaven.test.failure.ignore=true'
@@ -57,6 +67,9 @@ pipeline {
         }
 
         stage('SonarQube Analysis') {
+            agent {
+                label 'jenkins-slave-maven-petclinic'
+            }
             steps {
                 echo 'Running SonarQube analysis...'
                 withSonarQubeEnv('SonarQube') {
@@ -66,6 +79,9 @@ pipeline {
         }
 
         stage('Package') {
+            agent {
+                label 'jenkins-slave-maven-petclinic'
+            }
             steps {
                 echo 'Running Maven package...'
                 sh 'mvn package -DskipTests -Dcheckstyle.skip=true -Dspring-javaformat.skip=true -Denforcer.skip=true'
@@ -73,6 +89,9 @@ pipeline {
         }
 
         stage("Publish to Nexus Repository") {
+            agent {
+                label 'jenkins-slave-maven-petclinic'
+            }
             steps {
                 script {
                     echo 'Reading POM file...'
