@@ -135,44 +135,6 @@ pipeline {
                 }
             }
         }
-
-        stage('Build Docker Image') {
-            agent {
-                label 'jenkins-slave-docker-petclinic'
-            }
-            steps {
-                echo 'Building Docker image...'
-                script {
-                    sh 'docker build -t ${IMAGE_NAME}:latest --build-arg NEXUS_IP_PORT=192.168.56.126:8081 .'
-                }
-            }
-        }
-
-        stage('Tag Docker Image') {
-            steps {
-                echo 'Tagging Docker image...'
-                script {
-                    pom = readMavenPom file: "pom.xml"
-                    version = pom.version
-                    sh "docker tag ${IMAGE_NAME}:latest ${IMAGE_NAME}:${version}"
-                }
-            }
-        }
-
-        stage('Push Docker Image to Docker Hub') {
-            steps {
-                echo 'Pushing Docker image to Docker Hub...'
-                script {
-                    pom = readMavenPom file: "pom.xml"
-                    version = pom.version
-                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_PASS')]) {
-                        sh 'echo $DOCKERHUB_PASS | docker login -u $DOCKERHUB_USER --password-stdin'
-                        sh "docker push ${IMAGE_NAME}:${version}"
-                        sh "docker push ${IMAGE_NAME}:latest"
-                    }
-                }
-            }
-        }
     }
 
     post {
