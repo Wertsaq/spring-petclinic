@@ -18,17 +18,17 @@ pipeline {
     }
 
     stages {
-        stage('Clone repository') {
-            agent {
-                label 'jenkins-slave-maven-petclinic'
-            }
-            steps {
-                echo 'Cloning the repository...'
-                dir('workspace') {
-                    git url: 'https://github.com/Wertsaq/spring-petclinic.git', branch: 'main'
-                }
-            }
-        }
+        //stage('Clone repository') {
+        //    agent {
+        //        label 'jenkins-slave-maven-petclinic'
+        //    }
+        //    steps {
+        //        echo 'Cloning the repository...'
+        //        dir('workspace') {
+        //            git url: 'https://github.com/Wertsaq/spring-petclinic.git', branch: 'main'
+        //        }
+        //    }
+        //}
 
         stage('Clean') {
             agent {
