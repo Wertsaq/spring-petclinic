@@ -152,22 +152,7 @@ pipeline {
             steps {
                 echo 'Tagging Docker image...'
                 script {
-                    def pom = readMavenPom file: "pom.xml"
-                    env.POM_VERSION = pom.version
                     sh "docker tag ${IMAGE_NAME}:latest ${IMAGE_NAME}:${env.POM_VERSION}"
-                }
-            }
-        }
-
-        stage('Push Docker Image to Docker Hub') {
-            steps {
-                echo 'Pushing Docker image to Docker Hub...'
-                withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_PASS')]) {
-                    script {
-                        sh 'echo $DOCKERHUB_PASS | docker login -u $DOCKERHUB_USER --password-stdin'
-                        sh "docker push ${IMAGE_NAME}:${env.POM_VERSION}"
-                        sh "docker push ${IMAGE_NAME}:latest"
-                    }
                 }
             }
         }
