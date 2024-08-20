@@ -147,6 +147,15 @@ pipeline {
                 }
             }
         }
+
+        stage('Tag Docker Image') {
+            steps {
+                echo 'Tagging Docker image...'
+                script {
+                    sh "docker tag ${IMAGE_NAME}:latest ${IMAGE_NAME}:${env.BUILD_NUMBER}"
+                }
+            }
+        }
     }
 
     post {
