@@ -23,9 +23,7 @@ pipeline {
         stage('Clone repository') {
             steps {
                 echo 'Cloning the repository...'
-                dir('workspace') {
                     git url: 'https://github.com/Wertsaq/spring-petclinic.git', branch: 'main'
-                }
             }
         }
 
