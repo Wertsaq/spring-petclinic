@@ -143,9 +143,7 @@ pipeline {
             steps {
                 echo 'Building Docker image...'
                 script {
-                    dir('workspace/petclinic') {
-                        sh 'docker build -t ${IMAGE_NAME}:latest --build-arg NEXUS_IP_PORT=192.168.56.126:8081 .'
-                    }
+                    sh 'docker build -t ${IMAGE_NAME}:latest --build-arg NEXUS_IP_PORT=192.168.56.126:8081 .'
                 }
             }
         }
