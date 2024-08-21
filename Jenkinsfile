@@ -18,15 +18,17 @@ pipeline {
     }
 
     stages {
-        stage('Clone repository') {
-            agent {
-                label 'jenkins-slave-maven-petclinic'
-            }
-            steps {
-                echo 'Cloning the repository...'
-                    git url: 'https://github.com/Wertsaq/spring-petclinic.git', branch: 'main'
-            }
-        }
+        //stage('Clone repository') {
+        //    agent {
+        //        label 'jenkins-slave-maven-petclinic'
+        //    }
+        //    steps {
+        //        echo 'Cloning the repository...'
+        //        dir('workspace') {
+        //            git url: 'https://github.com/Wertsaq/spring-petclinic.git', branch: 'main'
+        //        }
+        //    }
+        //}
 
         stage('Clean') {
             agent {
@@ -147,33 +149,10 @@ pipeline {
         }
 
         stage('Tag Docker Image') {
-            agent {
-                label 'jenkins-slave-docker-petclinic'
-            }
             steps {
                 echo 'Tagging Docker image...'
                 script {
-                    pom = readMavenPom file: "pom.xml"
-                    version = pom.version
-                    sh "docker tag ${IMAGE_NAME}:latest ${IMAGE_NAME}:${version}"
-                }
-            }
-        }
-
-        stage('Push Docker Image to Docker Hub') {
-            agent {
-                label 'jenkins-slave-docker-petclinic'
-            }
-            steps {
-                echo 'Pushing Docker image to Docker Hub...'
-                script {
-                    pom = readMavenPom file: "pom.xml"
-                    version = pom.version
-                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_PASS')]) {
-                        sh 'echo $DOCKERHUB_PASS | docker login -u $DOCKERHUB_USER --password-stdin'
-                        sh "docker push ${IMAGE_NAME}:${version}"
-                        sh "docker push ${IMAGE_NAME}:latest"
-                    }
+                    sh "docker tag ${IMAGE_NAME}:latest ${IMAGE_NAME}:${env.BUILD_NUMBER}"
                 }
             }
         }
