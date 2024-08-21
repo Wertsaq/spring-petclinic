@@ -46,7 +46,7 @@ pipeline {
             }
             steps {
                 echo 'Running Maven compile...'
-                sh 'mvn compile -DskipTests -Dcheckstyle.skip=true -Dspring-javaformat.skip=true -Denforcer.skip=true'
+                sh 'mvn compile'
             }
         }
 
