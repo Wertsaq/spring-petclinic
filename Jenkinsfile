@@ -18,72 +18,89 @@ pipeline {
     }
 
     stages {
-        stage('Clone repository') {
-            steps {
-                node('jenkins-slave-maven-petclinic') {
-                    echo 'Cloning the repository...'
-                    git url: 'https://github.com/Wertsaq/spring-petclinic.git', branch: 'main'
-                }
+        stage('Clone repository and Build') {
+            agent {
+                label 'jenkins-slave-maven-petclinic'
             }
-        }
-
-        stage('Compile') {
             steps {
-                node('jenkins-slave-maven-petclinic') {
-                    echo 'Running Maven compile...'
-                    sh 'mvn clean compile'
+                script {
+                    dir('shared-workspace') {  // Використовується одна директорія
+                        echo 'Cloning the repository...'
+                        git url: 'https://github.com/Wertsaq/spring-petclinic.git', branch: 'main'
+                        
+                        echo 'Running Maven compile...'
+                        sh 'mvn clean compile -e -X'
+                    }
                 }
             }
         }
 
         stage('Test') {
+            agent {
+                label 'jenkins-slave-maven-petclinic'
+            }
             steps {
-                node('jenkins-slave-maven-petclinic') {
-                    echo 'Running Maven tests...'
-                    sh 'mvn test -Dmaven.test.failure.ignore=true'
+                script {
+                    dir('shared-workspace') {  // Використовується та сама директорія
+                        echo 'Running Maven tests...'
+                        sh 'mvn test -Dmaven.test.failure.ignore=true'
+                    }
                 }
             }
             post {
                 always {
                     echo 'Archiving JUnit test results...'
-                    junit '**/target/surefire-reports/*.xml'
+                    junit '**/shared-workspace/target/surefire-reports/*.xml'
                 }
             }
         }
 
         stage('SonarQube Analysis') {
+            agent {
+                label 'jenkins-slave-maven-petclinic'
+            }
             steps {
-                node('jenkins-slave-maven-petclinic') {
-                    echo 'Running SonarQube analysis...'
-                    withSonarQubeEnv('SonarQube') {
-                        sh 'mvn sonar:sonar'
+                script {
+                    dir('shared-workspace') {  // Використовується та сама директорія
+                        echo 'Running SonarQube analysis...'
+                        withSonarQubeEnv('SonarQube') {
+                            sh 'mvn sonar:sonar'
+                        }
                     }
                 }
             }
         }
 
         stage('Package') {
+            agent {
+                label 'jenkins-slave-maven-petclinic'
+            }
             steps {
-                node('jenkins-slave-maven-petclinic') {
-                    echo 'Running Maven package...'
-                    sh 'mvn package -DskipTests -Dcheckstyle.skip=true -Dspring-javaformat.skip=true -Denforcer.skip=true'
+                script {
+                    dir('shared-workspace') {  // Використовується та сама директорія
+                        echo 'Running Maven package...'
+                        sh 'mvn package -DskipTests -Dcheckstyle.skip=true -Dspring-javaformat.skip=true -Denforcer.skip=true'
+                    }
                 }
             }
         }
 
         stage("Publish to Nexus Repository") {
+            agent {
+                label 'jenkins-slave-maven-petclinic'
+            }
             steps {
-                node('jenkins-slave-maven-petclinic') {
-                    script {
+                script {
+                    dir('shared-workspace') {  // Використовується та сама директорія
                         echo 'Reading POM file...'
-                        pom = readMavenPom file: "pom.xml";
+                        def pom = readMavenPom file: "pom.xml";
                         
                         echo 'Finding artifacts in the target directory...'
-                        filesByGlob = findFiles(glob: "target/*.${pom.packaging}");
+                        def filesByGlob = findFiles(glob: "target/*.${pom.packaging}");
                         
                         if (filesByGlob.size() > 0) {
-                            artifactPath = filesByGlob[0].path;
-                            artifactExists = fileExists artifactPath;
+                            def artifactPath = filesByGlob[0].path;
+                            def artifactExists = fileExists artifactPath;
                             
                             if (artifactExists) {
                                 echo "*** Found artifact: ${artifactPath}, group: ${pom.groupId}, packaging: ${pom.packaging}, version: ${pom.version}";
@@ -123,18 +140,25 @@ pipeline {
                 label 'jenkins-slave-docker-petclinic'
             }
             steps {
-                echo 'Building Docker image...'
                 script {
-                    sh 'docker build -t ${IMAGE_NAME}:latest --build-arg NEXUS_IP_PORT=192.168.56.126:8081 .'
+                    dir('shared-workspace') {  // Використовується та сама директорія
+                        echo 'Building Docker image...'
+                        sh 'docker build -t ${IMAGE_NAME}:latest --build-arg NEXUS_IP_PORT=192.168.56.126:8081 .'
+                    }
                 }
             }
         }
 
         stage('Tag Docker Image') {
+            agent {
+                label 'jenkins-slave-docker-petclinic'
+            }
             steps {
-                echo 'Tagging Docker image...'
                 script {
-                    sh "docker tag ${IMAGE_NAME}:latest ${IMAGE_NAME}:${env.BUILD_NUMBER}"
+                    dir('shared-workspace') {  // Використовується та сама директорія
+                        echo 'Tagging Docker image...'
+                        sh "docker tag ${IMAGE_NAME}:latest ${IMAGE_NAME}:${env.BUILD_NUMBER}"
+                    }
                 }
             }
         }
@@ -142,8 +166,10 @@ pipeline {
 
     post {
         always {
-            echo 'Cleaning up workspace...'
-            cleanWs()
+            node('jenkins-slave-maven-petclinic') {
+                echo 'Cleaning up workspace...'
+                cleanWs()
+            }
         }
         success {
             echo 'Pipeline succeeded!'
