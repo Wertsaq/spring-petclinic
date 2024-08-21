@@ -18,6 +18,15 @@ pipeline {
     }
 
     stages {
+        stage('Clone repository') {
+            steps {
+                node('jenkins-slave-maven-petclinic') {
+                    echo 'Cloning the repository...'
+                    git url: 'https://github.com/Wertsaq/spring-petclinic.git', branch: 'main'
+                }
+            }
+        }
+
         stage('Compile') {
             steps {
                 node('jenkins-slave-maven-petclinic') {
