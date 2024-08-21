@@ -1,5 +1,5 @@
 pipeline {
-    agent any
+    agent none
 
     environment {
         JAVA_TOOL_OPTIONS = '-Duser.home=/var/maven'
@@ -18,45 +18,21 @@ pipeline {
     }
 
     stages {
-        //stage('Clone repository') {
-        //    agent {
-        //        label 'jenkins-slave-maven-petclinic'
-        //    }
-        //    steps {
-        //        echo 'Cloning the repository...'
-        //        dir('workspace') {
-        //            git url: 'https://github.com/Wertsaq/spring-petclinic.git', branch: 'main'
-        //        }
-        //    }
-        //}
-
-        stage('Clean') {
-            agent {
-                label 'jenkins-slave-maven-petclinic'
-            }
-            steps {
-                echo 'Running Maven clean...'
-                sh 'mvn clean'
-            }
-        }
-
         stage('Compile') {
-            agent {
-                label 'jenkins-slave-maven-petclinic'
-            }
             steps {
-                echo 'Running Maven compile...'
-                sh 'mvn compile'
+                node('jenkins-slave-maven-petclinic') {
+                    echo 'Running Maven compile...'
+                    sh 'mvn clean compile'
+                }
             }
         }
 
         stage('Test') {
-            agent {
-                label 'jenkins-slave-maven-petclinic'
-            }
             steps {
-                echo 'Running Maven tests...'
-                sh 'mvn test -Dmaven.test.failure.ignore=true'
+                node('jenkins-slave-maven-petclinic') {
+                    echo 'Running Maven tests...'
+                    sh 'mvn test -Dmaven.test.failure.ignore=true'
+                }
             }
             post {
                 always {
@@ -67,70 +43,67 @@ pipeline {
         }
 
         stage('SonarQube Analysis') {
-            agent {
-                label 'jenkins-slave-maven-petclinic'
-            }
             steps {
-                echo 'Running SonarQube analysis...'
-                withSonarQubeEnv('SonarQube') {
-                    sh 'mvn sonar:sonar'
+                node('jenkins-slave-maven-petclinic') {
+                    echo 'Running SonarQube analysis...'
+                    withSonarQubeEnv('SonarQube') {
+                        sh 'mvn sonar:sonar'
+                    }
                 }
             }
         }
 
         stage('Package') {
-            agent {
-                label 'jenkins-slave-maven-petclinic'
-            }
             steps {
-                echo 'Running Maven package...'
-                sh 'mvn package -DskipTests -Dcheckstyle.skip=true -Dspring-javaformat.skip=true -Denforcer.skip=true'
+                node('jenkins-slave-maven-petclinic') {
+                    echo 'Running Maven package...'
+                    sh 'mvn package -DskipTests -Dcheckstyle.skip=true -Dspring-javaformat.skip=true -Denforcer.skip=true'
+                }
             }
         }
 
         stage("Publish to Nexus Repository") {
-            agent {
-                label 'jenkins-slave-maven-petclinic'
-            }
             steps {
-                script {
-                    echo 'Reading POM file...'
-                    pom = readMavenPom file: "pom.xml";
-                    
-                    echo 'Finding artifacts in the target directory...'
-                    filesByGlob = findFiles(glob: "target/*.${pom.packaging}");
-                    
-                    if (filesByGlob.size() > 0) {
-                        artifactPath = filesByGlob[0].path;
-                        artifactExists = fileExists artifactPath;
+                node('jenkins-slave-maven-petclinic') {
+                    script {
+                        echo 'Reading POM file...'
+                        pom = readMavenPom file: "pom.xml";
                         
-                        if (artifactExists) {
-                            echo "*** Found artifact: ${artifactPath}, group: ${pom.groupId}, packaging: ${pom.packaging}, version: ${pom.version}";
+                        echo 'Finding artifacts in the target directory...'
+                        filesByGlob = findFiles(glob: "target/*.${pom.packaging}");
+                        
+                        if (filesByGlob.size() > 0) {
+                            artifactPath = filesByGlob[0].path;
+                            artifactExists = fileExists artifactPath;
                             
-                            nexusArtifactUploader(
-                                nexusVersion: NEXUS_VERSION,
-                                protocol: NEXUS_PROTOCOL,
-                                nexusUrl: NEXUS_URL,
-                                groupId: pom.groupId,
-                                version: pom.version,
-                                repository: NEXUS_REPOSITORY,
-                                credentialsId: NEXUS_CREDENTIAL_ID,
-                                artifacts: [
-                                    [artifactId: pom.artifactId,
-                                     classifier: '',
-                                     file: artifactPath,
-                                     type: pom.packaging],
-                                    [artifactId: pom.artifactId,
-                                     classifier: '',
-                                     file: "pom.xml",
-                                     type: "pom"]
-                                ]
-                            );
+                            if (artifactExists) {
+                                echo "*** Found artifact: ${artifactPath}, group: ${pom.groupId}, packaging: ${pom.packaging}, version: ${pom.version}";
+                                
+                                nexusArtifactUploader(
+                                    nexusVersion: NEXUS_VERSION,
+                                    protocol: NEXUS_PROTOCOL,
+                                    nexusUrl: NEXUS_URL,
+                                    groupId: pom.groupId,
+                                    version: pom.version,
+                                    repository: NEXUS_REPOSITORY,
+                                    credentialsId: NEXUS_CREDENTIAL_ID,
+                                    artifacts: [
+                                        [artifactId: pom.artifactId,
+                                        classifier: '',
+                                        file: artifactPath,
+                                        type: pom.packaging],
+                                        [artifactId: pom.artifactId,
+                                        classifier: '',
+                                        file: "pom.xml",
+                                        type: "pom"]
+                                    ]
+                                );
+                            } else {
+                                error "*** File: ${artifactPath}, could not be found";
+                            }
                         } else {
-                            error "*** File: ${artifactPath}, could not be found";
+                            error "*** No artifacts found in the target directory";
                         }
-                    } else {
-                        error "*** No artifacts found in the target directory";
                     }
                 }
             }
