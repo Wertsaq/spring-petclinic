@@ -161,8 +161,14 @@ pipeline {
 
     post {
         always {
-            echo 'Cleaning up workspace...'
-            cleanWs()
+            script {
+                echo 'Cleaning up workspaces...'
+                ['jenkins-slave-maven-petclinic', 'jenkins-slave-docker-petclinic'].each { label ->
+                    node(label) {
+                        cleanWs()
+                    }
+                }
+            }
         }
         success {
             echo 'Pipeline succeeded!'
