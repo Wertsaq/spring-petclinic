@@ -21,10 +21,10 @@ pipeline {
     }
 
     stages {
-        stage('Build and Test') {
+        stage('Maven Stage') {
             agent { label 'jenkins-slave-maven-petclinic' }
             stages {
-                stage('Clone Repository') {
+                stage('Clone repository') {
                     steps {
                         script { 
                             echo 'Cloning the repository...'
@@ -33,19 +33,19 @@ pipeline {
                     }
                 }
                 
-                stage('Compile Code') {
+                stage('Compile') {
                     steps {
                         script {
-                            echo 'Compiling source code...'
+                            echo 'Running Maven compile...'
                             sh 'mvn clean compile'
                         }
                     }
                 }
 
-                stage('Run Unit Tests') {
+                stage('Test') {
                     steps {
                         script {
-                            echo 'Running unit tests...'
+                            echo 'Running Maven tests...'
                             sh 'mvn test -Dmaven.test.failure.ignore=true'
                         }
                     }
@@ -57,10 +57,10 @@ pipeline {
                     }
                 }
 
-                stage('Perform SonarQube Analysis') {
+                stage('SonarQube Analysis') {
                     steps {
                         script {
-                            echo 'Performing SonarQube analysis...'
+                            echo 'Running SonarQube analysis...'
                             withSonarQubeEnv('SonarQube') {
                                 sh 'mvn sonar:sonar'
                             }
@@ -68,19 +68,19 @@ pipeline {
                     }
                 }
 
-                stage('Package Application') {
+                stage('Package') {
                     steps {
                         script {
-                            echo 'Packaging the application...'
+                            echo 'Running Maven package...'
                             sh 'mvn package -DskipTests -Dcheckstyle.skip=true -Dspring-javaformat.skip=true -Denforcer.skip=true'
                         }
                     }
                 }
 
-                stage("Publish to Nexus") {
+                stage("Publish to Nexus Repository") {
                     steps {
                         script {
-                            echo 'Publishing artifacts to Nexus...'
+                            echo 'Reading POM file...'
                             def pom = readMavenPom file: "pom.xml"
                             
                             echo 'Finding artifacts in the target directory...'
@@ -118,7 +118,7 @@ pipeline {
             }
         }
 
-        stage('Build and Publish Docker Image') {
+        stage('Docker Stage') {
             agent { label 'jenkins-slave-docker-petclinic' }
             stages {
                 stage('Build Docker Image') {
@@ -161,19 +161,14 @@ pipeline {
 
     post {
         always {
-            echo 'Cleaning up workspaces...'
-            parallel(
-                'Cleanup Maven Workspace': {
-                    node('jenkins-slave-maven-petclinic') {
-                        cleanWs()
-                    }
-                },
-                'Cleanup Docker Workspace': {
-                    node('jenkins-slave-docker-petclinic') {
+            script {
+                echo 'Cleaning up workspaces...'
+                ['jenkins-slave-maven-petclinic', 'jenkins-slave-docker-petclinic'].each { label ->
+                    node(label) {
                         cleanWs()
                     }
                 }
-            )
+            }
         }
         success {
             echo 'Pipeline succeeded!'
