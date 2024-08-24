@@ -153,8 +153,26 @@ pipeline {
                 script {
                     echo 'Tagging Docker image...'
                     pom = readMavenPom file: "pom.xml"
-                    version = pom.version
+                    version = pom.version.replace("-SNAPSHOT", "")
                     sh "docker tag ${IMAGE_NAME}:latest ${IMAGE_NAME}:${version}"
+                }
+            }
+        }
+
+        stage('Push Docker Image to Docker Hub') {
+            agent {
+                label 'jenkins-slave-docker-petclinic'
+            }
+            steps {
+                echo 'Pushing Docker image to Docker Hub...'
+                withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_PASS')]) {
+                    script {
+                        pom = readMavenPom file: "pom.xml"
+                        version = pom.version.replace("-SNAPSHOT", "")
+                        sh 'echo $DOCKERHUB_PASS | docker login -u $DOCKERHUB_USER --password-stdin'
+                        sh "docker push ${IMAGE_NAME}:${version}"
+                        sh "docker push ${IMAGE_NAME}:latest"
+                    }
                 }
             }
         }
