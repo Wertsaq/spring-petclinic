@@ -7,9 +7,9 @@ pipeline {
         IMAGE_NAME = 'wertsaq/petclinic'
         NEXUS_VERSION = "nexus3"
         NEXUS_PROTOCOL = "http"
-        NEXUS_URL = "nexus-url"
+        NEXUS_URL = credentials('nexus-url')
         NEXUS_REPOSITORY = "maven-nexus-repo"
-        NEXUS_CREDENTIAL_ID = "nexus-credentials"
+        NEXUS_CREDENTIAL_ID = credentials('nexus-credentials')
     }
 
     triggers {
@@ -152,23 +152,9 @@ pipeline {
             steps {
                 script {
                     echo 'Tagging Docker image...'
-                    sh "docker tag ${IMAGE_NAME}:latest ${IMAGE_NAME}:${env.BUILD_NUMBER}"
-                }
-            }
-        }
-    
-        stage('Push Docker Image to Docker Hub') {
-            agent {
-                label 'jenkins-slave-docker-petclinic'
-            }
-            steps {
-                echo 'Pushing Docker image to Docker Hub...'
-                withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_PASS')]) {
-                    script {
-                        sh 'echo $DOCKERHUB_PASS | docker login -u $DOCKERHUB_USER --password-stdin'
-                        sh "docker push ${IMAGE_NAME}:${env.BUILD_NUMBER}"
-                        sh "docker push ${IMAGE_NAME}:latest"
-                    }
+                    pom = readMavenPom file: "pom.xml"
+                    version = pom.version
+                    sh "docker tag ${IMAGE_NAME}:latest ${IMAGE_NAME}:${version}"
                 }
             }
         }
