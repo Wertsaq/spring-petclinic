@@ -23,11 +23,9 @@ pipeline {
                 label 'jenkins-slave-maven-petclinic'
             }
             steps {
-                script {
-                    dir('shared-workspace') {  
-                        echo 'Cloning the repository...'
-                        git url: 'https://github.com/Wertsaq/spring-petclinic.git', branch: 'main'
-                    }
+                script { 
+                    echo 'Cloning the repository...'
+                    git url: 'https://github.com/Wertsaq/spring-petclinic.git', branch: 'main'
                 }
             }
         }
@@ -38,10 +36,8 @@ pipeline {
             }
             steps {
                 script {
-                    dir('shared-workspace') {  
-                        echo 'Running Maven compile...'
-                        sh 'mvn clean compile'
-                    }
+                    echo 'Running Maven compile...'
+                    sh 'mvn clean compile'
                 }
             }
         }
@@ -52,10 +48,8 @@ pipeline {
             }
             steps {
                 script {
-                    dir('shared-workspace') { 
-                        echo 'Running Maven tests...'
-                        sh 'mvn test -Dmaven.test.failure.ignore=true'
-                    }
+                    echo 'Running Maven tests...'
+                    sh 'mvn test -Dmaven.test.failure.ignore=true'
                 }
             }
             post {
@@ -72,11 +66,9 @@ pipeline {
             }
             steps {
                 script {
-                    dir('shared-workspace') {  
-                        echo 'Running SonarQube analysis...'
-                        withSonarQubeEnv('SonarQube') {
-                            sh 'mvn sonar:sonar'
-                        }
+                    echo 'Running SonarQube analysis...'
+                    withSonarQubeEnv('SonarQube') {
+                        sh 'mvn sonar:sonar'
                     }
                 }
             }
@@ -88,10 +80,8 @@ pipeline {
             }
             steps {
                 script {
-                    dir('shared-workspace') { 
-                        echo 'Running Maven package...'
-                        sh 'mvn package -DskipTests -Dcheckstyle.skip=true -Dspring-javaformat.skip=true -Denforcer.skip=true'
-                    }
+                    echo 'Running Maven package...'
+                    sh 'mvn package -DskipTests -Dcheckstyle.skip=true -Dspring-javaformat.skip=true -Denforcer.skip=true'
                 }
             }
         }
@@ -102,7 +92,6 @@ pipeline {
             }
             steps {
                 script {
-                    dir('shared-workspace') { 
                         echo 'Reading POM file...'
                         def pom = readMavenPom file: "pom.xml";
                         
@@ -141,7 +130,6 @@ pipeline {
                         } else {
                             error "*** No artifacts found in the target directory";
                         }
-                    }
                 }
             }
         }
@@ -152,10 +140,8 @@ pipeline {
             }
             steps {
                 script {
-                    dir('shared-workspace') {  
-                        echo 'Building Docker image...'
-                        sh 'docker build -t ${IMAGE_NAME}:latest --build-arg NEXUS_IP_PORT=192.168.56.126:8081 .'
-                    }
+                    echo 'Building Docker image...'
+                    sh 'docker build -t ${IMAGE_NAME}:latest --build-arg NEXUS_IP_PORT=192.168.56.126:8081 .'
                 }
             }
         }
@@ -166,10 +152,8 @@ pipeline {
             }
             steps {
                 script {
-                    dir('shared-workspace') { 
-                        echo 'Tagging Docker image...'
-                        sh "docker tag ${IMAGE_NAME}:latest ${IMAGE_NAME}:${env.BUILD_NUMBER}"
-                    }
+                    echo 'Tagging Docker image...'
+                    sh "docker tag ${IMAGE_NAME}:latest ${IMAGE_NAME}:${env.BUILD_NUMBER}"
                 }
             }
         }
