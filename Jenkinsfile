@@ -162,18 +162,18 @@ pipeline {
     post {
         always {
             echo 'Cleaning up workspaces...'
-            parallel {
+            parallel(
                 'Cleanup Maven Workspace': {
                     node('jenkins-slave-maven-petclinic') {
                         cleanWs()
                     }
-                }
+                },
                 'Cleanup Docker Workspace': {
                     node('jenkins-slave-docker-petclinic') {
                         cleanWs()
                     }
                 }
-            }
+            )
         }
         success {
             echo 'Pipeline succeeded!'
