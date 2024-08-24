@@ -5,10 +5,9 @@ pipeline {
         JAVA_TOOL_OPTIONS = '-Duser.home=/var/maven'
         SONAR_USER_HOME = '/var/tmp/sonar'
         IMAGE_NAME = 'wertsaq/petclinic'
-        
         NEXUS_VERSION = "nexus3"
         NEXUS_PROTOCOL = "http"
-        NEXUS_URL = "192.168.56.126:8081"
+        NEXUS_URL = "nexus-url"
         NEXUS_REPOSITORY = "maven-nexus-repo"
         NEXUS_CREDENTIAL_ID = "nexus-credentials"
     }
@@ -141,7 +140,7 @@ pipeline {
             steps {
                 script {
                     echo 'Building Docker image...'
-                    sh 'docker build -t ${IMAGE_NAME}:latest --build-arg NEXUS_IP_PORT=192.168.56.126:8081 .'
+                    sh 'docker build -t ${IMAGE_NAME}:latest --build-arg NEXUS_IP_PORT=${NEXUS_URL} .'
                 }
             }
         }
@@ -154,6 +153,19 @@ pipeline {
                 script {
                     echo 'Tagging Docker image...'
                     sh "docker tag ${IMAGE_NAME}:latest ${IMAGE_NAME}:${env.BUILD_NUMBER}"
+                }
+            }
+        }
+    
+        stage('Push Docker Image to Docker Hub') {
+            steps {
+                echo 'Pushing Docker image to Docker Hub...'
+                withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_PASS')]) {
+                    script {
+                        sh 'echo $DOCKERHUB_PASS | docker login -u $DOCKERHUB_USER --password-stdin'
+                        sh "docker push ${IMAGE_NAME}:${env.BUILD_NUMBER}"
+                        sh "docker push ${IMAGE_NAME}:latest"
+                    }
                 }
             }
         }
