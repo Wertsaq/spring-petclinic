@@ -9,7 +9,7 @@ pipeline {
         NEXUS_PROTOCOL = "http"
         NEXUS_URL = credentials('nexus-url')
         NEXUS_REPOSITORY = "maven-nexus-repo"
-        NEXUS_CREDENTIAL_ID = credentials('nexus-credentials')
+        NEXUS_CREDENTIAL_ID = "nexus-credentials"
     }
 
     triggers {
