@@ -158,6 +158,9 @@ pipeline {
         }
     
         stage('Push Docker Image to Docker Hub') {
+            agent {
+                label 'jenkins-slave-docker-petclinic'
+            }
             steps {
                 echo 'Pushing Docker image to Docker Hub...'
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_PASS')]) {
