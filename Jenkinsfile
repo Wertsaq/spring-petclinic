@@ -161,10 +161,18 @@ pipeline {
 
     post {
         always {
-            agent any
-            script {
-                echo 'Cleaning up workspaces...'
-                cleanWs()
+            echo 'Cleaning up workspaces...'
+            parallel {
+                'Cleanup Maven Workspace': {
+                    node('jenkins-slave-maven-petclinic') {
+                        cleanWs()
+                    }
+                }
+                'Cleanup Docker Workspace': {
+                    node('jenkins-slave-docker-petclinic') {
+                        cleanWs()
+                    }
+                }
             }
         }
         success {
