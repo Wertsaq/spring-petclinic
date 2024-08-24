@@ -55,7 +55,7 @@ pipeline {
             post {
                 always {
                     echo 'Archiving JUnit test results...'
-                    junit '**/shared-workspace/target/surefire-reports/*.xml'
+                    junit '**/target/surefire-reports/*.xml'
                 }
             }
         }
