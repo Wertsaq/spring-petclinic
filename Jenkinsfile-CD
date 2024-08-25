@@ -20,15 +20,19 @@ pipeline {
                 script {
                     echo "Deploying application to ${params.ENVIRONMENT} environment with tag ${params.IMAGE_TAG}..."
 
-                    def credentials = getServerCredentials(params.ENVIRONMENT)
-                    env.SERVER_ADDRESS = credentials.serverId
-                    env.PORT = credentials.portId
+                    def (serverId, portId) = getServerCredentials(params.ENVIRONMENT)
 
-                    sshagent(['ssh-deploy-prod-server']) {
-                        sh "ssh -o StrictHostKeyChecking=no ubuntu@${SERVER_ADDRESS} 'docker stop petclinic || true'"
-                        sh "ssh -o StrictHostKeyChecking=no ubuntu@${SERVER_ADDRESS} 'docker rm petclinic || true'"
-                        sh "ssh -o StrictHostKeyChecking=no ubuntu@${SERVER_ADDRESS} 'docker pull ${IMAGE_NAME}:${params.IMAGE_TAG}'"
-                        sh "ssh -o StrictHostKeyChecking=no ubuntu@${SERVER_ADDRESS} 'docker run -d --name petclinic -p ${PORT}:8080 ${IMAGE_NAME}:${params.IMAGE_TAG}'"
+                    withCredentials([string(credentialsId: serverId, variable: 'SERVER_ADDRESS'),
+                                     string(credentialsId: portId, variable: 'PORT')]) {
+                        sshagent(['ssh-deploy-prod-server']) {
+                            def commands = [
+                                "docker stop petclinic || true",
+                                "docker rm petclinic || true",
+                                "docker pull ${IMAGE_NAME}:${params.IMAGE_TAG}",
+                                "docker run -d --name petclinic -p ${PORT}:8080 ${IMAGE_NAME}:${params.IMAGE_TAG}"
+                            ]
+                            sh "ssh -o StrictHostKeyChecking=no ubuntu@${SERVER_ADDRESS} '${commands.join(' && ')}'"
+                        }
                     }
                 }
             }
@@ -37,21 +41,12 @@ pipeline {
 }
 
 def getServerCredentials(environment) {
-    def serverCredentialsId = ''
-    def portCredentialsId = ''
-
     switch (environment) {
         case 'dev':
-            serverCredentialsId = 'dev-server-address'
-            portCredentialsId = 'dev-port'
-            break;
+            return ['dev-server-address', 'dev-port']
         case 'qa':
-            serverCredentialsId = 'qa-server-address'
-            portCredentialsId = 'qa-port'
-            break;
+            return ['qa-server-address', 'qa-port']
         default:
             error("Unknown environment: ${environment}")
     }
-
-    return [serverId: serverCredentialsId, portId: portCredentialsId]
 }
