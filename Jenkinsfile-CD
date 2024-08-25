@@ -31,7 +31,7 @@ pipeline {
                                 "docker pull ${IMAGE_NAME}:${params.IMAGE_TAG}",
                                 "docker run -d --name petclinic -p ${PORT}:8080 ${IMAGE_NAME}:${params.IMAGE_TAG}"
                             ]
-                            sh "ssh -o StrictHostKeyChecking=no ubuntu@${SERVER_ADDRESS} '${commands.join(' && ')}'"
+                            sh "ssh -o StrictHostKeyChecking=no jenkins@${SERVER_ADDRESS} '${commands.join(' && ')}'"
                         }
                     }
                 }
