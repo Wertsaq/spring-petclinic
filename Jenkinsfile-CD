@@ -57,6 +57,8 @@ def getServerCredentials(environment) {
 }
 
 def getDockerTags(imageName) {
-    def tags = sh(script: "curl -s https://hub.docker.com/v2/repositories/${imageName}/tags/?page_size=100 | jq -r '.results[].name'", returnStdout: true).trim()
-    return tags.tokenize('\n')
+    def response = httpRequest url: "https://hub.docker.com/v2/repositories/${imageName}/tags/?page_size=100"
+    def json = readJSON text: response.content
+    def tags = json.results.collect { it.name }
+    return tags.isEmpty() ? ['latest'] : tags
 }
