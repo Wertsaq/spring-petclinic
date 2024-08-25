@@ -11,7 +11,7 @@ pipeline {
 
     parameters {
         choice(name: 'ENVIRONMENT', choices: ['dev', 'qa'], description: 'Select the deployment environment')
-        choice(name: 'IMAGE_TAG', choices: getDockerTags(IMAGE_NAME), description: 'Docker image tag to deploy')
+        choice(name: 'IMAGE_TAG', choices: getDockerTags('wertsaq/petclinic'), description: 'Docker image tag to deploy')
     }
 
     stages {
