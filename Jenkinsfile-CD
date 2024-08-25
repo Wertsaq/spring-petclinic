@@ -44,11 +44,11 @@ def getServerCredentials(environment) {
         case 'dev':
             serverCredentialsId = 'dev-server-address'
             portCredentialsId = 'dev-port'
-            break
+            break;
         case 'qa':
             serverCredentialsId = 'qa-server-address'
             portCredentialsId = 'qa-port'
-            break
+            break;
         default:
             error("Unknown environment: ${environment}")
     }
@@ -57,8 +57,16 @@ def getServerCredentials(environment) {
 }
 
 def getDockerTags(imageName) {
-    def response = httpRequest url: "https://hub.docker.com/v2/repositories/${imageName}/tags/?page_size=100"
-    def json = readJSON text: response.content
-    def tags = json.results.collect { it.name }
-    return tags.isEmpty() ? ['latest'] : tags
+    withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+        def response = httpRequest(
+            httpMode: 'GET',
+            url: "https://hub.docker.com/v2/repositories/${imageName}/tags/?page_size=100",
+            authentication: 'docker-hub-credentials',
+            validResponseCodes: '100:399',
+            contentType: 'APPLICATION_JSON'
+        )
+        def json = readJSON text: response.content
+        def tags = json.results.collect { it.name }
+        return tags.isEmpty() ? ['latest'] : tags
+    }
 }
