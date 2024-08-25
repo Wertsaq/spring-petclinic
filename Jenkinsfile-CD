@@ -1,0 +1,64 @@
+pipeline {
+    agent { label 'jenkins-slave-docker-petclinic' }
+
+    options {
+        skipDefaultCheckout()
+    }
+
+    environment {
+        IMAGE_NAME = 'wertsaq/petclinic'
+    }
+
+    parameters {
+        choice(name: 'ENVIRONMENT', choices: ['dev', 'qa'], description: 'Select the deployment environment')
+        choice(name: 'IMAGE_TAG', choices: getDockerTags(IMAGE_NAME), description: 'Docker image tag to deploy')
+    }
+
+    stages {
+        stage('Deploy') {
+            steps {
+                script {
+                    echo "Deploying application to ${params.ENVIRONMENT} environment with tag ${params.IMAGE_TAG}..."
+
+                    def credentials = getServerCredentials(params.ENVIRONMENT)
+                    env.SERVER_CREDENTIALS_ID = credentials.serverId
+                    env.PORT_CREDENTIALS_ID = credentials.portId
+
+                    sshagent(['ssh-deploy-prod-server']) {
+                        sh "ssh -o StrictHostKeyChecking=no ubuntu@${SERVER_ADDRESS} 'docker stop petclinic || true'"
+                        sh "ssh -o StrictHostKeyChecking=no ubuntu@${SERVER_ADDRESS} 'docker rm petclinic || true'"
+                        sh "ssh -o StrictHostKeyChecking=no ubuntu@${SERVER_ADDRESS} 'docker pull ${IMAGE_NAME}:${params.IMAGE_TAG}'"
+                        sh "ssh -o StrictHostKeyChecking=no ubuntu@${SERVER_ADDRESS} 'docker run -d --name petclinic -p ${PORT}:8080 ${IMAGE_NAME}:${params.IMAGE_TAG}'"
+                    }
+                }
+            }
+        }
+    }
+}
+
+def getServerCredentials(environment) {
+    def serverCredentialsId = ''
+    def portCredentialsId = ''
+
+    switch (environment) {
+        case 'dev':
+            serverCredentialsId = 'dev-server-address'
+            portCredentialsId = 'dev-port'
+            break
+        case 'qa':
+            serverCredentialsId = 'qa-server-address'
+            portCredentialsId = 'qa-port'
+            break
+        default:
+            error("Unknown environment: ${environment}")
+    }
+
+    return [serverId: serverCredentialsId, portId: portCredentialsId]
+}
+
+def getDockerTags(imageName) {
+    def response = httpRequest url: "https://hub.docker.com/v2/repositories/${imageName}/tags/?page_size=100"
+    def json = readJSON text: response.content
+    def tags = json.results.collect { it.name }
+    return tags.isEmpty() ? ['latest'] : tags
+}
