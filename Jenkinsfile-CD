@@ -11,7 +11,7 @@ pipeline {
 
     parameters {
         choice(name: 'ENVIRONMENT', choices: ['dev', 'qa'], description: 'Select the deployment environment')
-        choice(name: 'IMAGE_TAG', choices: getDockerTags('wertsaq/petclinic'), description: 'Docker image tag to deploy')
+        choice(name: 'IMAGE_TAG', choices: ['3.3.0', 'latest'], description: 'Docker image tag to deploy')
     }
 
     stages {
@@ -54,18 +54,4 @@ def getServerCredentials(environment) {
     }
 
     return [serverId: serverCredentialsId, portId: portCredentialsId]
-}
-
-def getDockerTags(imageName) {
-    node(jenkins-slave-docker-petclinic) {
-        withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-            def token = sh(script: "curl -s -H \"Content-Type: application/json\" -X POST -d '{\"username\": \"${DOCKER_USERNAME}\", \"password\": \"${DOCKER_PASSWORD}\"}' https://hub.docker.com/v2/users/login/ | jq -r .token", returnStdout: true).trim()
-            
-            def response = sh(script: "curl -s -H \"Authorization: JWT ${token}\" https://hub.docker.com/v2/repositories/${imageName}/tags/?page_size=100", returnStdout: true).trim()
-            def json = readJSON text: response
-            def tags = json.results.collect { it.name }
-            
-            return tags.isEmpty() ? ['latest'] : tags
-        }
-    }
 }
