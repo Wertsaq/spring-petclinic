@@ -20,12 +20,19 @@ pipeline {
                 script {
                     echo "Deploying application to ${params.ENVIRONMENT} environment with tag ${params.IMAGE_TAG}..."
 
-                    def (serverId, portId) = getServerCredentials(params.ENVIRONMENT)
+                    def credentials = getServerCredentials(params.ENVIRONMENT)
 
-                    sh "docker stop petclinic || true"
-                    sh "docker rm petclinic || true"
-                    sh "docker pull ${IMAGE_NAME}:${params.IMAGE_TAG}"
-                    sh "docker run -d --name petclinic -p ${PORT}:8080 ${IMAGE_NAME}:${params.IMAGE_TAG}"
+                    withCredentials([
+                        usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_PASS'),
+                        string(credentialsId: credentials.serverId, variable: 'SERVER_ADDRESS'),
+                        string(credentialsId: credentials.portId, variable: 'PORT')
+                    ]) {
+                        sh 'echo $DOCKERHUB_PASS | docker login -u $DOCKERHUB_USER --password-stdin'
+                        sh 'docker stop petclinic || true'
+                        sh 'docker rm petclinic || true'
+                        sh "docker pull ${IMAGE_NAME}:${params.IMAGE_TAG}"
+                        sh "docker run -d --name petclinic -p ${PORT}:8080 ${IMAGE_NAME}:${params.IMAGE_TAG}"
+                    }
                 }
             }
         }
@@ -33,12 +40,18 @@ pipeline {
 }
 
 def getServerCredentials(environment) {
+    def credentials = [:]
     switch (environment) {
         case 'dev':
-            return ['dev-server-address', 'dev-port']
+            credentials.serverId = 'dev-server-address'
+            credentials.portId = 'dev-port'
+            break
         case 'qa':
-            return ['qa-server-address', 'qa-port']
+            credentials.serverId = 'qa-server-address'
+            credentials.portId = 'qa-port'
+            break
         default:
             error("Unknown environment: ${environment}")
     }
+    return credentials
 }
