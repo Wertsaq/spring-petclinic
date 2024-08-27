@@ -42,6 +42,8 @@ pipeline {
                 script {
                     echo 'Waiting for the application to start...'
 
+                    def serverCredentials = getServerCredentials(params.ENVIRONMENT)
+
                     def maxRetries = 10
                     def retryInterval = 15
                     def healthCheckUrl
