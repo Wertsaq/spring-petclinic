@@ -46,7 +46,7 @@ pipeline {
                     def serverCredentials = getServerCredentials(params.ENVIRONMENT) 
 
                     def maxRetries = 10
-                    def retryInterval = 30  
+                    def retryInterval = 15  
                     def healthCheckUrl
 
                     withCredentials([
