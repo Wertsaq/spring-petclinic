@@ -22,18 +22,10 @@ pipeline {
 
                     def (serverId, portId) = getServerCredentials(params.ENVIRONMENT)
 
-                    withCredentials([string(credentialsId: serverId, variable: 'SERVER_ADDRESS'),
-                                     string(credentialsId: portId, variable: 'PORT')]) {
-                        sshagent(['ssh-deploy-prod-server']) {
-                            def commands = [
-                                "docker stop petclinic || true",
-                                "docker rm petclinic || true",
-                                "docker pull ${IMAGE_NAME}:${params.IMAGE_TAG}",
-                                "docker run -d --name petclinic -p ${PORT}:8080 ${IMAGE_NAME}:${params.IMAGE_TAG}"
-                            ]
-                            sh "ssh -o StrictHostKeyChecking=no jenkins@${SERVER_ADDRESS} '${commands.join(' && ')}'"
-                        }
-                    }
+                    "docker stop petclinic || true",
+                    "docker rm petclinic || true",
+                    "docker pull ${IMAGE_NAME}:${params.IMAGE_TAG}",
+                    "docker run -d --name petclinic -p ${PORT}:8080 ${IMAGE_NAME}:${params.IMAGE_TAG}"
                 }
             }
         }
