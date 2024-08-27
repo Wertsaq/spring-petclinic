@@ -20,12 +20,12 @@ pipeline {
                 script {
                     echo "Deploying application to ${params.ENVIRONMENT} environment with tag ${params.IMAGE_TAG}..."
 
-                    def credentials = getServerCredentials(params.ENVIRONMENT)
+                    def serverCredentials = getServerCredentials(params.ENVIRONMENT)
 
                     withCredentials([
                         usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_PASS'),
-                        string(credentialsId: credentials.serverId, variable: 'SERVER_ADDRESS'),
-                        string(credentialsId: credentials.portId, variable: 'PORT')
+                        string(credentialsId: serverCredentials.serverId, variable: 'SERVER_ADDRESS'),
+                        string(credentialsId: serverCredentials.portId, variable: 'PORT')
                     ]) {
                         sh 'echo $DOCKERHUB_PASS | docker login -u $DOCKERHUB_USER --password-stdin'
                         sh 'docker stop petclinic || true'
@@ -36,22 +36,73 @@ pipeline {
                 }
             }
         }
+
+        stage('Health Check') {
+            steps {
+                script {
+                    echo 'Waiting for the application to start...'
+
+                    def maxRetries = 10
+                    def retryInterval = 15
+                    def healthCheckUrl
+
+                    withCredentials([
+                        string(credentialsId: serverCredentials.serverId, variable: 'SERVER_ADDRESS'),
+                        string(credentialsId: serverCredentials.portId, variable: 'PORT')
+                    ]) {
+                        healthCheckUrl = "http://${SERVER_ADDRESS}:${PORT}/actuator/health"
+                    }
+
+                    echo "Performing health check on ${healthCheckUrl}..."
+
+                    def healthCheckPassed = false
+
+                    for (int i = 0; i < maxRetries; i++) {
+                        def statusCode = sh(
+                            script: "curl -o /dev/null -s -w \"%{http_code}\" ${healthCheckUrl}",
+                            returnStdout: true
+                        ).trim()
+
+                        if (statusCode == '200') {
+                            echo "Health check passed with status code 200!"
+                            healthCheckPassed = true
+                            break
+                        } else {
+                            echo "Health check attempt ${i+1}/${maxRetries} failed with status code ${statusCode}. Retrying in ${retryInterval} seconds..."
+                            sleep(time: retryInterval, unit: 'SECONDS')
+                        }
+                    }
+
+                    if (!healthCheckPassed) {
+                        echo "Health check failed after ${maxRetries} attempts."
+                        error("Health check failed")
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Cleaning up workspaces...'
+            cleanWs()
+        }
+        success {
+            echo 'Pipeline succeeded!'
+        }
+        failure {
+            echo 'Pipeline failed.'
+        }
     }
 }
 
 def getServerCredentials(environment) {
-    def credentials = [:]
     switch (environment) {
         case 'dev':
-            credentials.serverId = 'dev-server-address'
-            credentials.portId = 'dev-port'
-            break
+            return [serverId: 'dev-server-address', portId: 'dev-port']
         case 'qa':
-            credentials.serverId = 'qa-server-address'
-            credentials.portId = 'qa-port'
-            break
+            return [serverId: 'qa-server-address', portId: 'qa-port']
         default:
             error("Unknown environment: ${environment}")
     }
-    return credentials
 }
