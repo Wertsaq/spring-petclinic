@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'jenkins-slave-docker-petclinic' }
+    agent any
 
     options {
         skipDefaultCheckout()
@@ -16,6 +16,7 @@ pipeline {
 
     stages {
         stage('Deploy') {
+            agent { label 'jenkins-slave-docker-petclinic' }
             steps {
                 script {
                     echo "Deploying application to ${params.ENVIRONMENT} environment with tag ${params.IMAGE_TAG}..."
@@ -41,40 +42,46 @@ pipeline {
             steps {
                 script {
                     echo 'Waiting for the application to start...'
-                    sleep(time: 60, unit: 'SECONDS') // Increase sleep time to 60 seconds
 
-                    def serverCredentials = getServerCredentials(params.ENVIRONMENT)
+                    def serverCredentials = getServerCredentials(params.ENVIRONMENT) 
+
+                    def maxRetries = 10
+                    def retryInterval = 30  
+                    def initialDelay = 30  
+                    def healthCheckUrl
 
                     withCredentials([
                         string(credentialsId: serverCredentials.serverId, variable: 'SERVER_ADDRESS'),
-                        string(credentialsId: serverCredentials.portId, variable: 'PORT') 
+                        string(credentialsId: serverCredentials.portId, variable: 'PORT')
                     ]) {
-                        def healthCheckUrl = "http://${SERVER_ADDRESS}:${PORT}/actuator/health"
+                        healthCheckUrl = "http://${SERVER_ADDRESS}:${PORT}/actuator/health"
+                    }
 
-                        echo "Performing health check on ${healthCheckUrl}..."
+                    echo "Performing health check on ${healthCheckUrl}..."
 
-                        // Retry loop for health check
-                        def maxRetries = 5
-                        def healthCheckPassed = false
-                        for (int i = 0; i < maxRetries; i++) {
-                            def statusCode = sh(
-                                script: "curl -o /dev/null -s -w \"%{http_code}\" ${healthCheckUrl}",
-                                returnStdout: true
-                            ).trim()
+                    sleep(time: initialDelay, unit: 'SECONDS')
 
-                            if (statusCode == '200') {
-                                echo "Health check passed with status code 200!"
-                                healthCheckPassed = true
-                                break
-                            } else {
-                                echo "Health check attempt ${i+1}/${maxRetries} failed with status code ${statusCode}. Retrying in 15 seconds..."
-                                sleep(time: 15, unit: 'SECONDS')
-                            }
+                    def healthCheckPassed = false
+
+                    for (int i = 0; i < maxRetries; i++) {
+                        def statusCode = sh(
+                            script: "curl -o /dev/null -s -w \"%{http_code}\" ${healthCheckUrl}",
+                            returnStdout: true
+                        ).trim()
+
+                        if (statusCode == '200') {
+                            echo "Health check passed with status code 200!"
+                            healthCheckPassed = true
+                            break
+                        } else {
+                            echo "Health check attempt ${i+1}/${maxRetries} failed with status code ${statusCode}. Retrying in ${retryInterval} seconds..."
+                            sleep(time: retryInterval, unit: 'SECONDS')
                         }
+                    }
 
-                        if (!healthCheckPassed) {
-                            error("Health check failed after ${maxRetries} attempts.")
-                        }
+                    if (!healthCheckPassed) {
+                        echo "Health check failed after ${maxRetries} attempts."
+                        error("Health check failed")
                     }
                 }
             }
