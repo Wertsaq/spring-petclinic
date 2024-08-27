@@ -43,6 +43,8 @@ pipeline {
                     echo 'Waiting for the application to start...'
                     sleep(time: 30, unit: 'SECONDS') 
 
+                    def serverCredentials = getServerCredentials(params.ENVIRONMENT)
+
                     withCredentials([
                         string(credentialsId: serverCredentials.serverId, variable: 'SERVER_ADDRESS'),
                         string(credentialsId: serverCredentials.portId, variable: 'PORT') 
