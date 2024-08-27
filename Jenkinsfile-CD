@@ -31,11 +31,7 @@ pipeline {
                         sh 'docker stop petclinic || true'
                         sh 'docker rm petclinic || true'
                         sh "docker pull ${IMAGE_NAME}:${params.IMAGE_TAG}"
-                        sh '''
-                            docker run -d --name petclinic \
-                            -p ${PORT}:8080 \
-                            ${IMAGE_NAME}:${params.IMAGE_TAG}
-                        '''
+                        sh "docker run -d --name petclinic -p ${PORT}:8080 ${IMAGE_NAME}:${params.IMAGE_TAG}"
                     }
                 }
             }
@@ -46,7 +42,7 @@ pipeline {
                 script {
                     echo 'Waiting for the application to start...'
 
-                    def serverCredentials = getServerCredentials(params.ENVIRONMENT)
+                    def serverCredentials = getServerCredentials(params.ENVIRONMENT) 
 
                     def maxRetries = 10
                     def retryInterval = 15  
@@ -94,6 +90,7 @@ pipeline {
             }
         }
     }
+
 
     post {
         always {
