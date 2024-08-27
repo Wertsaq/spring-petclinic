@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'jenkins-slave-docker-petclinic' }
+    agent any
 
     options {
         skipDefaultCheckout()
@@ -16,6 +16,7 @@ pipeline {
 
     stages {
         stage('Deploy') {
+            agent { label 'jenkins-slave-docker-petclinic' }
             steps {
                 script {
                     echo "Deploying application to ${params.ENVIRONMENT} environment with tag ${params.IMAGE_TAG}..."
