@@ -46,7 +46,6 @@ pipeline {
 
                     def maxRetries = 10
                     def retryInterval = 15  
-                    def initialDelay = 15  
                     def healthCheckUrl
 
                     withCredentials([
@@ -57,8 +56,6 @@ pipeline {
                     }
 
                     echo "Performing health check on ${healthCheckUrl}..."
-
-                    sleep(time: initialDelay, unit: 'SECONDS')
 
                     def healthCheckPassed = false
 
