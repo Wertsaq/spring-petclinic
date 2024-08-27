@@ -1,5 +1,5 @@
 pipeline {
-    agent any
+    agent { label 'jenkins-slave-docker-petclinic' }
 
     options {
         skipDefaultCheckout()
@@ -16,7 +16,6 @@ pipeline {
 
     stages {
         stage('Deploy') {
-            agent { label 'jenkins-slave-docker-petclinic' }
             steps {
                 script {
                     echo "Deploying application to ${params.ENVIRONMENT} environment with tag ${params.IMAGE_TAG}..."
@@ -44,10 +43,10 @@ pipeline {
                     echo 'Waiting for the application to start...'
                     sleep(time: 30, unit: 'SECONDS') 
 
-                    // TODO: for loop 
-
-                    withCredentials([string(credentialsId: env.SERVER_CREDENTIALS_ID, variable: 'SERVER_ADDRESS'),
-                                     string(credentialsId: env.PORT_CREDENTIALS_ID, variable: 'PORT')]) {
+                    withCredentials([
+                        string(credentialsId: serverCredentials.serverId, variable: 'SERVER_ADDRESS'),
+                        string(credentialsId: serverCredentials.portId, variable: 'PORT') 
+                    ]) {
                         def healthCheckUrl = "http://${SERVER_ADDRESS}:${PORT}/actuator/health"
 
                         echo "Performing health check on ${healthCheckUrl}..."
