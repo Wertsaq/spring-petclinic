@@ -46,7 +46,8 @@ pipeline {
                     def serverCredentials = getServerCredentials(params.ENVIRONMENT) 
 
                     def maxRetries = 10
-                    def retryInterval = 15  
+                    def retryInterval = 30 
+                    def initialDelay = 30  
                     def healthCheckUrl
 
                     withCredentials([
@@ -57,6 +58,8 @@ pipeline {
                     }
 
                     echo "Performing health check on ${healthCheckUrl}..."
+
+                    sleep(time: initialDelay, unit: 'SECONDS')
 
                     def healthCheckPassed = false
 
@@ -84,7 +87,6 @@ pipeline {
             }
         }
     }
-
 
     post {
         always {
