@@ -22,9 +22,9 @@ pipeline {
 
                     def (serverId, portId) = getServerCredentials(params.ENVIRONMENT)
 
-                    sh "docker stop petclinic || true",
-                    sh "docker rm petclinic || true",
-                    sh "docker pull ${IMAGE_NAME}:${params.IMAGE_TAG}",
+                    sh "docker stop petclinic || true"
+                    sh "docker rm petclinic || true"
+                    sh "docker pull ${IMAGE_NAME}:${params.IMAGE_TAG}"
                     sh "docker run -d --name petclinic -p ${PORT}:8080 ${IMAGE_NAME}:${params.IMAGE_TAG}"
                 }
             }
